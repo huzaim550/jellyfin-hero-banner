@@ -51,7 +51,7 @@ jobs:
           files: ${{ steps.package.outputs.zip_name }}
           fail_on_unmatched_files: true
 
-      - name: Generate manifest.json
+      - name: Update manifest.json
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           CHECKSUM="${{ steps.package.outputs.checksum }}"
@@ -59,31 +59,59 @@ jobs:
           REPO="${{ github.repository }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           SOURCE_URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ZIP_NAME}"
-
-          cat > manifest.json << 'INNEREOF'
-          [
-            {
-              "guid": "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f",
-              "name": "Hero Banner",
-              "description": "Adds a rotating hero banner of the latest additions per library to the home screen.",
-              "overview": "Adds a rotating hero banner of the latest additions per library to the home screen.",
-              "owner": "PLACEHOLDER_OWNER",
-              "category": "General",
-              "imageUrl": "",
-              "versions": [
-                {
-                  "version": "PLACEHOLDER_VERSION",
-                  "changelog": "Initial release.",
-                  "targetAbi": "10.9.0.0",
-                  "sourceUrl": "PLACEHOLDER_URL",
-                  "checksum": "PLACEHOLDER_CHECKSUM",
-                  "timestamp": "PLACEHOLDER_TIMESTAMP"
-                }
-              ]
-            }
-          ]
-          INNEREOF
-          sed -i "s#PLACEHOLDER_OWNER#${{ github.repository_owner }}#; s#PLACEHOLDER_VERSION#${VERSION}#; s#PLACEHOLDER_URL#${SOURCE_URL}#; s#PLACEHOLDER_CHECKSUM#${CHECKSUM}#; s#PLACEHOLDER_TIMESTAMP#${TIMESTAMP}#" manifest.json
+          
+          python3 << 'PYSCRIPT'
+          import json
+          
+          VERSION = "$VERSION"
+          CHECKSUM = "$CHECKSUM"
+          SOURCE_URL = "$SOURCE_URL"
+          TIMESTAMP = "$TIMESTAMP"
+          OWNER = "${{ github.repository_owner }}"
+          
+          # Read existing manifest or create new one
+          try:
+              with open("manifest.json", "r") as f:
+                  manifest = json.load(f)
+          except:
+              manifest = [{
+                  "guid": "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f",
+                  "name": "Hero Banner",
+                  "description": "Adds a rotating hero banner of the latest additions per library to the home screen.",
+                  "overview": "Adds a rotating hero banner of the latest additions per library to the home screen.",
+                  "owner": OWNER,
+                  "category": "General",
+                  "imageUrl": "",
+                  "versions": []
+              }]
+          
+          # Ensure versions array exists
+          if "versions" not in manifest[0]:
+              manifest[0]["versions"] = []
+          
+          # Remove any existing entry for this version (avoid duplicates)
+          manifest[0]["versions"] = [v for v in manifest[0]["versions"] if v["version"] != VERSION]
+          
+          # Add new version entry at the beginning (newest first)
+          new_version = {
+              "version": VERSION,
+              "changelog": "Bug fixes and improvements for plugin settings persistence and banner layout.",
+              "targetAbi": "10.9.11.0",
+              "sourceUrl": SOURCE_URL,
+              "checksum": CHECKSUM,
+              "timestamp": TIMESTAMP
+          }
+          manifest[0]["versions"].insert(0, new_version)
+          
+          # Write back with pretty formatting
+          with open("manifest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          PYSCRIPT
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          CHECKSUM: ${{ steps.package.outputs.checksum }}
+          SOURCE_URL: https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/${{ steps.package.outputs.zip_name }}
+          TIMESTAMP: ${{ env.TIMESTAMP }}
 
       - name: Commit manifest.json back to the repo
         run: |
