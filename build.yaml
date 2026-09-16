@@ -1,9 +1,9 @@
 name: "Hero Banner"
 guid: "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f"
-version: "1.0.0.0"
-targetAbi: "10.9.0.0"
+version: "1.0.3.0"
+targetAbi: "10.9.11.0"
 framework: "net8.0"
-owner: "you"
+owner: "huzaim550"
 overview: "Adds a rotating hero banner of the latest additions per library to the home screen."
 description: >
   Hero Banner adds a large rotating banner to the top of the Jellyfin home screen,
@@ -13,4 +13,4 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.HeroBanner.dll"
 changelog: >
-  - 1.0.0.0: Initial release.
+  - 1.0.3.0: Fix settings persistence, banner layout, and package compatibility with Jellyfin 10.9.11.
