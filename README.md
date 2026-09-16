@@ -49,7 +49,7 @@ can add from Dashboard → Plugins → Repositories, same as any community plugi
 5. Open the **Actions** tab — a build should already be running from your
    upload. Wait for the green checkmark (~1-2 minutes).
 6. Once it's done, your manifest will be live at:
-   `https://raw.githubusercontent.com/<your-username>/<your-repo>/main/manifest.json`
+   `https://raw.githubusercontent.com/huzaim550/jellyfin-hero-banner/main/manifest.json`
 7. In Jellyfin: **Dashboard → Plugins → Repositories → Add Repository**,
    paste that URL, save.
 8. Go to **Dashboard → Plugins → Catalog**, find **Hero Banner** under
