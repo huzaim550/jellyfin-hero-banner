@@ -33,8 +33,7 @@ namespace Jellyfin.Plugin.HeroBanner
 
         /// <summary>
         /// Inserts (or refreshes) the hero banner script/style tags into index.html.
-        /// Runs on every server start, since Jellyfin overwrites the web client's
-        /// files on version upgrades.
+        /// Appends the current plugin assembly version as a query parameter to bust browser/Jellyfin web caches.
         /// </summary>
         internal static void Inject(IApplicationPaths applicationPaths, ILogger logger)
         {
@@ -45,11 +44,12 @@ namespace Jellyfin.Plugin.HeroBanner
                 return;
             }
 
+            var version = Plugin.Instance?.Version.ToString() ?? "1.0.1.0";
             var html = File.ReadAllText(indexPath);
 
             var snippet = MarkerStart +
-                "<link rel=\"stylesheet\" href=\"/HeroBanner/ClientStyle.css\">" +
-                "<script defer src=\"/HeroBanner/ClientScript.js\"></script>" +
+                $"<link rel=\"stylesheet\" href=\"/HeroBanner/ClientStyle.css?v={version}\">" +
+                $"<script defer src=\"/HeroBanner/ClientScript.js?v={version}\"></script>" +
                 MarkerEnd;
 
             var startIdx = html.IndexOf(MarkerStart, StringComparison.Ordinal);
@@ -68,7 +68,7 @@ namespace Jellyfin.Plugin.HeroBanner
 
                     html = html.Remove(startIdx, endIdx - startIdx).Insert(startIdx, snippet);
                     File.WriteAllText(indexPath, html);
-                    logger.LogInformation("Hero Banner refreshed its index.html injection");
+                    logger.LogInformation("Hero Banner refreshed its index.html injection with version {Version}", version);
                     return;
                 }
             }
@@ -82,7 +82,7 @@ namespace Jellyfin.Plugin.HeroBanner
 
             html = html.Insert(headIdx, snippet);
             File.WriteAllText(indexPath, html);
-            logger.LogInformation("Hero Banner injected its script into index.html");
+            logger.LogInformation("Hero Banner injected its script into index.html with version {Version}", version);
         }
 
         /// <summary>
