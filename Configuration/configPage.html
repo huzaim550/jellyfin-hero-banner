@@ -74,16 +74,27 @@
             }
 
             function saveConfig(page) {
+                Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     config.RotationSeconds = parseInt(page.querySelector("#RotationSeconds").value, 10) || 8;
                     config.ItemsPerLibrary = parseInt(page.querySelector("#ItemsPerLibrary").value, 10) || 1;
-                    config.IncludedLibraryNames = page.querySelector("#IncludedLibraryNames").value;
-                    config.ExcludedLibraryNames = page.querySelector("#ExcludedLibraryNames").value;
+                    config.IncludedLibraryNames = page.querySelector("#IncludedLibraryNames").value.trim();
+                    config.ExcludedLibraryNames = page.querySelector("#ExcludedLibraryNames").value.trim();
                     config.ShowOverview = page.querySelector("#ShowOverview").checked;
 
                     ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
+                        Dashboard.hideLoadingMsg();
+                        if (window.opener && window.opener.location) {
+                            window.opener.location.reload();
+                        }
+                    }).catch(function (err) {
+                        Dashboard.hideLoadingMsg();
+                        Dashboard.alert("Error saving settings: " + err);
                     });
+                }).catch(function (err) {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert("Error loading settings: " + err);
                 });
             }
 
