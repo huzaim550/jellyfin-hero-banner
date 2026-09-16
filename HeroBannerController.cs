@@ -15,7 +15,7 @@ namespace Jellyfin.Plugin.HeroBanner
         /// <summary>
         /// Serves the injected client script.
         /// </summary>
-        [HttpGet("ClientScript.js")]
+        [HttpGet("heroBanner.js")]
         [AllowAnonymous]
         public ActionResult GetScript()
         {
@@ -33,7 +33,7 @@ namespace Jellyfin.Plugin.HeroBanner
         /// <summary>
         /// Serves the injected stylesheet.
         /// </summary>
-        [HttpGet("ClientStyle.css")]
+        [HttpGet("heroBanner.css")]
         [AllowAnonymous]
         public ActionResult GetStyle()
         {
