@@ -59,21 +59,23 @@ jobs:
           REPO="${{ github.repository }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           SOURCE_URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ZIP_NAME}"
-          
-          python3 << 'PYSCRIPT'
+
+          export VERSION CHECKSUM SOURCE_URL TIMESTAMP
+
+          python3 <<'PY'
           import json
-          
-          VERSION = "$VERSION"
-          CHECKSUM = "$CHECKSUM"
-          SOURCE_URL = "$SOURCE_URL"
-          TIMESTAMP = "$TIMESTAMP"
-          OWNER = "${{ github.repository_owner }}"
-          
-          # Read existing manifest or create new one
+          import os
+
+          VERSION = os.environ["VERSION"]
+          CHECKSUM = os.environ["CHECKSUM"]
+          SOURCE_URL = os.environ["SOURCE_URL"]
+          TIMESTAMP = os.environ["TIMESTAMP"]
+          OWNER = os.environ.get("GITHUB_REPOSITORY_OWNER", "")
+
           try:
-              with open("manifest.json", "r") as f:
+              with open("manifest.json", "r", encoding="utf-8") as f:
                   manifest = json.load(f)
-          except:
+          except Exception:
               manifest = [{
                   "guid": "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f",
                   "name": "Hero Banner",
@@ -84,15 +86,12 @@ jobs:
                   "imageUrl": "",
                   "versions": []
               }]
-          
-          # Ensure versions array exists
+
           if "versions" not in manifest[0]:
               manifest[0]["versions"] = []
-          
-          # Remove any existing entry for this version (avoid duplicates)
+
           manifest[0]["versions"] = [v for v in manifest[0]["versions"] if v["version"] != VERSION]
-          
-          # Add new version entry at the beginning (newest first)
+
           new_version = {
               "version": VERSION,
               "changelog": "Bug fixes and improvements for plugin settings persistence and banner layout.",
@@ -102,16 +101,16 @@ jobs:
               "timestamp": TIMESTAMP
           }
           manifest[0]["versions"].insert(0, new_version)
-          
-          # Write back with pretty formatting
-          with open("manifest.json", "w") as f:
+
+          with open("manifest.json", "w", encoding="utf-8") as f:
               json.dump(manifest, f, indent=2)
-          PYSCRIPT
+              f.write("\n")
+          PY
         env:
           VERSION: ${{ steps.version.outputs.version }}
           CHECKSUM: ${{ steps.package.outputs.checksum }}
           SOURCE_URL: https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/${{ steps.package.outputs.zip_name }}
-          TIMESTAMP: ${{ env.TIMESTAMP }}
+          TIMESTAMP: ${{ github.run_id }}
 
       - name: Commit manifest.json back to the repo
         run: |
