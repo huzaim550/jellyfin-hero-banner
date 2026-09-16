@@ -1,0 +1,152 @@
+.heroBannerPlugin {
+    position: relative;
+    width: 100%;
+    height: 46vh;
+    min-height: 320px;
+    max-height: 560px;
+    overflow: hidden;
+    margin-bottom: 1.5em;
+    background-color: #0b0b0d;
+}
+
+.heroBannerPlugin-slides {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center 20%;
+    transition: background-image 0.6s ease-in-out;
+}
+
+.heroBannerPlugin-scrim {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(180deg, rgba(11, 11, 13, 0) 40%, rgba(11, 11, 13, 0.85) 92%, #0b0b0d 100%),
+        linear-gradient(90deg, rgba(11, 11, 13, 0.75) 0%, rgba(11, 11, 13, 0.15) 55%, rgba(11, 11, 13, 0) 75%);
+}
+
+.heroBannerPlugin-content {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 2.75em;
+    padding: 0 3.5vw;
+    max-width: 640px;
+    color: #f5f5f2;
+}
+
+.heroBannerPlugin-eyebrow {
+    font-size: 0.85em;
+    color: #d8b25c;
+    margin-bottom: 0.4em;
+    font-weight: 600;
+}
+
+.heroBannerPlugin-title {
+    font-size: clamp(1.6em, 4vw, 2.7em);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 0.4em;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.heroBannerPlugin-overview {
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: #d5d5d2;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-bottom: 1em;
+    max-width: 52ch;
+}
+
+.heroBannerPlugin-actions {
+    display: flex;
+    gap: 0.75em;
+}
+
+.heroBannerPlugin-actions button {
+    border: none;
+    border-radius: 4px;
+    padding: 0.65em 1.5em;
+    font-size: 0.95em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+}
+
+.heroBannerPlugin-play {
+    background: #f5f5f2;
+    color: #0b0b0d;
+}
+
+.heroBannerPlugin-play:hover {
+    transform: scale(1.03);
+}
+
+.heroBannerPlugin-more {
+    background: rgba(255, 255, 255, 0.16);
+    color: #f5f5f2;
+    backdrop-filter: blur(6px);
+}
+
+.heroBannerPlugin-more:hover {
+    background: rgba(255, 255, 255, 0.26);
+}
+
+.heroBannerPlugin-actions button:focus-visible,
+.heroBannerPlugin-dot:focus-visible {
+    outline: 2px solid #d8b25c;
+    outline-offset: 2px;
+}
+
+.heroBannerPlugin-dots {
+    position: absolute;
+    right: 3vw;
+    bottom: 1.25em;
+    display: flex;
+    gap: 0.4em;
+}
+
+.heroBannerPlugin-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.heroBannerPlugin-dot.active {
+    background: #d8b25c;
+    transform: scale(1.25);
+}
+
+@media (max-width: 640px) {
+    .heroBannerPlugin {
+        height: 40vh;
+        min-height: 260px;
+    }
+
+    .heroBannerPlugin-content {
+        bottom: 1.5em;
+        max-width: 90%;
+    }
+
+    .heroBannerPlugin-overview {
+        -webkit-line-clamp: 2;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .heroBannerPlugin-slides {
+        transition: none;
+    }
+
+    .heroBannerPlugin-actions button,
+    .heroBannerPlugin-dot {
+        transition: none;
+    }
+}

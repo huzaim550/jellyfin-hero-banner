@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>Jellyfin.Plugin.HeroBanner</AssemblyName>
+    <RootNamespace>Jellyfin.Plugin.HeroBanner</RootNamespace>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Product>Hero Banner</Product>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      IMPORTANT: match these to the Jellyfin server version you're running.
+      Check Dashboard > About in your Jellyfin instance for the exact version,
+      then use the matching Jellyfin.Controller / Jellyfin.Model package version.
+      https://www.nuget.org/packages/Jellyfin.Controller
+    -->
+    <PackageReference Include="Jellyfin.Controller" Version="10.9.11" />
+    <PackageReference Include="Jellyfin.Model" Version="10.9.11" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Configuration\configPage.html" />
+    <EmbeddedResource Include="Web\heroBanner.js" />
+    <EmbeddedResource Include="Web\heroBanner.css" />
+  </ItemGroup>
+
+</Project>

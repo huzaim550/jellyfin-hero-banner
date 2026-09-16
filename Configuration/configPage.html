@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hero Banner</title>
+</head>
+<body>
+    <div id="HeroBannerConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+         data-require="emby-input,emby-button,emby-checkbox">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="HeroBannerConfigForm">
+                    <div class="verticalSection">
+                        <h2>Hero Banner</h2>
+                        <p>
+                            Adds a rotating hero banner of the latest additions per library to the
+                            home screen. The banner reads its settings on page load, so changes take
+                            effect the next time a browser loads or refreshes Jellyfin.
+                        </p>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="RotationSeconds">Rotation interval (seconds)</label>
+                        <input is="emby-input" type="number" min="3" id="RotationSeconds" name="RotationSeconds" />
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ItemsPerLibrary">Items per library</label>
+                        <input is="emby-input" type="number" min="1" max="10" id="ItemsPerLibrary" name="ItemsPerLibrary" />
+                        <div class="fieldDescription">How many of the most recently added items to pull from each library.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="IncludedLibraryNames">Only include these libraries</label>
+                        <input is="emby-input" type="text" id="IncludedLibraryNames" name="IncludedLibraryNames" placeholder="e.g. Movies, TV Shows" />
+                        <div class="fieldDescription">Comma-separated library names. Leave blank to include every library.</div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ExcludedLibraryNames">Exclude these libraries</label>
+                        <input is="emby-input" type="text" id="ExcludedLibraryNames" name="ExcludedLibraryNames" placeholder="e.g. Home Videos" />
+                        <div class="fieldDescription">Comma-separated library names to always leave out.</div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="ShowOverview" name="ShowOverview" />
+                            <span>Show the overview text on the banner</span>
+                        </label>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        (function () {
+            var pluginId = "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f";
+
+            function loadConfig(page) {
+                Dashboard.showLoadingMsg();
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    page.querySelector("#RotationSeconds").value = config.RotationSeconds;
+                    page.querySelector("#ItemsPerLibrary").value = config.ItemsPerLibrary;
+                    page.querySelector("#IncludedLibraryNames").value = config.IncludedLibraryNames || "";
+                    page.querySelector("#ExcludedLibraryNames").value = config.ExcludedLibraryNames || "";
+                    page.querySelector("#ShowOverview").checked = config.ShowOverview;
+                    Dashboard.hideLoadingMsg();
+                });
+            }
+
+            function saveConfig(page) {
+                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                    config.RotationSeconds = parseInt(page.querySelector("#RotationSeconds").value, 10) || 8;
+                    config.ItemsPerLibrary = parseInt(page.querySelector("#ItemsPerLibrary").value, 10) || 1;
+                    config.IncludedLibraryNames = page.querySelector("#IncludedLibraryNames").value;
+                    config.ExcludedLibraryNames = page.querySelector("#ExcludedLibraryNames").value;
+                    config.ShowOverview = page.querySelector("#ShowOverview").checked;
+
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+            }
+
+            document.querySelector("#HeroBannerConfigPage").addEventListener("pageshow", function () {
+                loadConfig(this);
+            });
+
+            document.querySelector("#HeroBannerConfigForm").addEventListener("submit", function (e) {
+                e.preventDefault();
+                saveConfig(document.querySelector("#HeroBannerConfigPage"));
+                return false;
+            });
+        })();
+    </script>
+</body>
+</html>
