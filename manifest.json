@@ -9,12 +9,12 @@
     "imageUrl": "",
     "versions": [
       {
-        "version": "1.0.0.0",
+        "version": "1.0.1.0",
         "changelog": "Initial release.",
         "targetAbi": "10.9.0.0",
-        "sourceUrl": "https://github.com/huzaim550/jellyfin-hero-banner/releases/download/v1.0.0.0/herobanner_1.0.0.0.zip",
-        "checksum": "32d37c341b2738797c66a3e5f86e2bf1",
-        "timestamp": "2026-09-16T12:33:50Z"
+        "sourceUrl": "https://github.com/huzaim550/jellyfin-hero-banner/releases/download/v1.0.1.0/herobanner_1.0.1.0.zip",
+        "checksum": "4b4f852f839fcbc7734c497d0d5835e7",
+        "timestamp": "2026-09-16T19:22:10Z"
       }
     ]
   }
