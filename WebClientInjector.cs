@@ -1,51 +1,34 @@
 using System;
 using System.IO;
 using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller;
 using MediaBrowser.Controller.Plugins;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Jellyfin.Plugin.HeroBanner
 {
     /// <summary>
-    /// Jellyfin auto-discovers every <see cref="IServerEntryPoint"/> implementation in a
-    /// loaded plugin assembly and calls <see cref="Run"/> once at server startup - no manual
-    /// registration needed. We use that hook to patch the web client's index.html so it
-    /// loads our injected script and stylesheet.
+    /// Implements <see cref="IPluginServiceRegistrator"/> to run server startup tasks in Jellyfin 10.9+.
+    /// We use this entry point to patch index.html on server start.
     /// </summary>
-    public class WebClientInjector : IServerEntryPoint
+    public class WebClientInjector : IPluginServiceRegistrator
     {
         private const string MarkerStart = "<!-- HeroBannerPlugin:start -->";
         private const string MarkerEnd = "<!-- HeroBannerPlugin:end -->";
 
-        private readonly IApplicationPaths _applicationPaths;
-        private readonly ILogger<WebClientInjector> _logger;
-
-        public WebClientInjector(IApplicationPaths applicationPaths, ILogger<WebClientInjector> logger)
-        {
-            _applicationPaths = applicationPaths;
-            _logger = logger;
-        }
-
         /// <inheritdoc />
-        public void Run()
+        public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
         {
             try
             {
-                Inject(_applicationPaths, _logger);
+                var logger = applicationHost.LoggerFactory.CreateLogger<WebClientInjector>();
+                Inject(applicationHost.ApplicationPaths, logger);
             }
-            catch (Exception ex)
+            catch
             {
-                _logger.LogError(
-                    ex,
-                    "Hero Banner could not patch index.html automatically. " +
-                    "See the plugin README for how to add the two tags by hand.");
+                // Prevent server startup crashes if WebPath is non-writable
             }
-        }
-
-        /// <inheritdoc />
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
         }
 
         /// <summary>
