@@ -20,14 +20,14 @@ namespace Jellyfin.Plugin.HeroBanner
         /// <inheritdoc />
         public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
         {
-            try
+            // Build temporary provider to get required services during startup registration
+            var serviceProvider = serviceCollection.BuildServiceProvider();
+            var applicationPaths = serviceProvider.GetService<IApplicationPaths>();
+            var logger = serviceProvider.GetService<ILogger<WebClientInjector>>();
+
+            if (applicationPaths != null && logger != null)
             {
-                var logger = applicationHost.LoggerFactory.CreateLogger<WebClientInjector>();
-                Inject(applicationHost.ApplicationPaths, logger);
-            }
-            catch
-            {
-                // Prevent server startup crashes if WebPath is non-writable
+                Inject(applicationPaths, logger);
             }
         }
 
