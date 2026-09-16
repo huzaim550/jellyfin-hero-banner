@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "$VERSION",
+        "changelog": "Bug fixes and improvements for plugin settings persistence and banner layout.",
+        "targetAbi": "10.9.11.0",
+        "sourceUrl": "$SOURCE_URL",
+        "checksum": "$CHECKSUM",
+        "timestamp": "$TIMESTAMP"
+      },
+      {
         "version": "1.0.3.0",
         "changelog": "Initial release.",
         "targetAbi": "10.9.0.0",
