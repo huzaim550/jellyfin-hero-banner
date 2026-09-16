@@ -6,8 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Jellyfin.Plugin.HeroBanner</AssemblyName>
     <RootNamespace>Jellyfin.Plugin.HeroBanner</RootNamespace>
-    <AssemblyVersion>1.0.2.0</AssemblyVersion>
-    <FileVersion>1.0.2.0</FileVersion>
+    <AssemblyVersion>1.0.3.0</AssemblyVersion>
+    <FileVersion>1.0.3.0</FileVersion>
     <Product>Hero Banner</Product>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
   </PropertyGroup>

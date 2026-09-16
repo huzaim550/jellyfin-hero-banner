@@ -34,7 +34,7 @@ namespace Jellyfin.Plugin.HeroBanner
                 return;
             }
 
-            var version = Plugin.Instance?.Version.ToString() ?? "1.0.1.0";
+            var version = Plugin.Instance?.Version.ToString() ?? "1.0.3.0";
             var html = File.ReadAllText(indexPath);
 
             // Corrected filenames to match embedded resources in .csproj

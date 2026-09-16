@@ -22,6 +22,12 @@
         el: null
     };
 
+    function normalizeConfig() {
+        CONFIG.rotationSeconds = Math.max(3, parseInt(CONFIG.rotationSeconds, 10) || 8);
+        CONFIG.itemsPerLibrary = Math.min(20, Math.max(1, parseInt(CONFIG.itemsPerLibrary, 10) || 1));
+        CONFIG.showOverview = !!CONFIG.showOverview;
+    }
+
     function log() {
         var args = Array.prototype.slice.call(arguments);
         args.unshift("[HeroBanner]");
@@ -36,10 +42,12 @@
             .then(function (json) {
                 if (json) {
                     Object.assign(CONFIG, json);
+                    normalizeConfig();
                 }
             })
             .catch(function () {
                 // Use defaults if the settings endpoint isn't reachable yet.
+                normalizeConfig();
             });
     }
 
@@ -281,8 +289,7 @@
             target.insertBefore(state.el, target.firstChild);
         }
 
-        render();
-        restartTimer();
+        loadBannerData();
     }
 
     function unmount() {
@@ -304,35 +311,47 @@
         }
     }
 
-    function init() {
+    function loadBannerData() {
         fetchConfig().then(function () {
             waitForApiClient(function () {
                 getLatestPerLibrary()
                     .then(function (items) {
                         if (!items.length) {
                             log("No items found across your libraries - nothing to show.");
+                            state.slides = [];
+                            state.index = 0;
+                            if (state.el) {
+                                render();
+                            }
                             return;
                         }
 
                         state.slides = items;
                         state.index = 0;
 
-                        window.addEventListener("hashchange", checkRoute);
-
-                        var observer = new MutationObserver(function () {
-                            if (isHomeRoute() && !document.getElementById("heroBannerPlugin")) {
-                                mount();
-                            }
-                        });
-                        observer.observe(document.body, { childList: true, subtree: true });
-
-                        checkRoute();
+                        if (state.el) {
+                            render();
+                            restartTimer();
+                        }
                     })
                     .catch(function (err) {
                         log("Failed to load items for the banner", err);
                     });
             });
         });
+    }
+
+    function init() {
+        window.addEventListener("hashchange", checkRoute);
+
+        var observer = new MutationObserver(function () {
+            if (isHomeRoute() && !document.getElementById("heroBannerPlugin")) {
+                mount();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        checkRoute();
     }
 
     if (document.readyState === "loading") {

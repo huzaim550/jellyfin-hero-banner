@@ -20,7 +20,7 @@
 
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="RotationSeconds">Rotation interval (seconds)</label>
-                        <input is="emby-input" type="number" min="3" id="RotationSeconds" name="RotationSeconds" />
+                        <input is="emby-input" type="number" min="3" max="60" id="RotationSeconds" name="RotationSeconds" />
                     </div>
 
                     <div class="inputContainer">
@@ -61,32 +61,47 @@
         (function () {
             var pluginId = "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f";
 
+            function clamp(value, min, max, fallback) {
+                var parsed = parseInt(value, 10);
+                if (isNaN(parsed)) {
+                    return fallback;
+                }
+                return Math.min(max, Math.max(min, parsed));
+            }
+
             function loadConfig(page) {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    page.querySelector("#RotationSeconds").value = config.RotationSeconds;
-                    page.querySelector("#ItemsPerLibrary").value = config.ItemsPerLibrary;
+                    page.querySelector("#RotationSeconds").value = clamp(config.RotationSeconds, 3, 60, 8);
+                    page.querySelector("#ItemsPerLibrary").value = clamp(config.ItemsPerLibrary, 1, 20, 1);
                     page.querySelector("#IncludedLibraryNames").value = config.IncludedLibraryNames || "";
                     page.querySelector("#ExcludedLibraryNames").value = config.ExcludedLibraryNames || "";
-                    page.querySelector("#ShowOverview").checked = config.ShowOverview;
+                    page.querySelector("#ShowOverview").checked = !!config.ShowOverview;
                     Dashboard.hideLoadingMsg();
+                }).catch(function (err) {
+                    Dashboard.hideLoadingMsg();
+                    Dashboard.alert("Error loading settings: " + err);
                 });
             }
 
             function saveConfig(page) {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    config.RotationSeconds = parseInt(page.querySelector("#RotationSeconds").value, 10) || 8;
-                    config.ItemsPerLibrary = parseInt(page.querySelector("#ItemsPerLibrary").value, 10) || 1;
-                    config.IncludedLibraryNames = page.querySelector("#IncludedLibraryNames").value.trim();
-                    config.ExcludedLibraryNames = page.querySelector("#ExcludedLibraryNames").value.trim();
-                    config.ShowOverview = page.querySelector("#ShowOverview").checked;
+                    config.RotationSeconds = clamp(page.querySelector("#RotationSeconds").value, 3, 60, 8);
+                    config.ItemsPerLibrary = clamp(page.querySelector("#ItemsPerLibrary").value, 1, 20, 1);
+                    config.IncludedLibraryNames = (page.querySelector("#IncludedLibraryNames").value || "").trim();
+                    config.ExcludedLibraryNames = (page.querySelector("#ExcludedLibraryNames").value || "").trim();
+                    config.ShowOverview = !!page.querySelector("#ShowOverview").checked;
 
                     ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                         Dashboard.hideLoadingMsg();
                         if (window.opener && window.opener.location) {
                             window.opener.location.reload();
+                        } else {
+                            setTimeout(function () {
+                                window.location.reload();
+                            }, 150);
                         }
                     }).catch(function (err) {
                         Dashboard.hideLoadingMsg();

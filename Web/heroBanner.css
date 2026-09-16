@@ -1,7 +1,7 @@
 /* ============================================================================
    HERO BANNER PLUGIN - MAIN CONTAINER
    Base container that holds the entire hero banner with background color
-   and responsive sizing. Uses negative margin to blend into the page flow.
+   and responsive sizing. This version avoids clipping the sections below.
    ========================================================================== */
 .heroBannerPlugin {
     position: relative;
@@ -10,10 +10,13 @@
     min-height: 380px;
     max-height: 600px;
     overflow: hidden;
-    margin-bottom: -2em;
-    background-color: #0b0b0d;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    margin: 0 0 1.25rem;
+    background: #0b0b0d;
+    border-radius: 18px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    z-index: 1;
+    isolation: isolate;
     animation: slideInUp 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
@@ -23,45 +26,37 @@
     inset: 0;
     background-size: cover;
     background-position: center 20%;
-    transition: background-image 1s ease-in-out;
+    transform: scale(1.04);
+    filter: saturate(1.15) contrast(1.08);
+    transition: background-image 1s ease-in-out, transform 1.2s ease;
     animation: zoomInFade 0.8s ease-in-out;
-    border-radius: 12px;
+    border-radius: 18px;
 }
 
-/* ============================================================================
-   SCRIM OVERLAYS - Dark gradient layers for text readability
-   Two-layer gradient: vertical fade top-to-bottom + left-to-right shadow
-   Creates Netflix-style visual hierarchy with readable contrast
-   ========================================================================== */
+/* This keeps the main text readable on top of the image */
 .heroBannerPlugin-scrim {
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(180deg, rgba(11, 11, 13, 0.1) 0%, rgba(11, 11, 13, 0.4) 50%, #0b0b0d 100%),
-        linear-gradient(90deg, rgba(11, 11, 13, 0.92) 0%, rgba(11, 11, 13, 0.6) 45%, rgba(11, 11, 13, 0) 80%);
-    border-radius: 12px;
+        linear-gradient(180deg, rgba(11, 11, 13, 0.1) 0%, rgba(11, 11, 13, 0.28) 40%, #0b0b0d 100%),
+        linear-gradient(90deg, rgba(11, 11, 13, 0.88) 0%, rgba(11, 11, 13, 0.62) 46%, rgba(11, 11, 13, 0) 80%);
+    border-radius: 18px;
+    z-index: 1;
 }
 
-/* ============================================================================
-   CONTENT WRAPPER - Holds title, overview, and action buttons
-   Positioned at the bottom with fade-in animation on load
-   ========================================================================== */
+/* content spacing tuned so it sits inside the banner and does not draw under the following section */
 .heroBannerPlugin-content {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 3.5em;
     padding: 0 4vw;
-    max-width: 650px;
+    max-width: 680px;
     color: #ffffff;
-    z-index: 2;
+    z-index: 3;
     animation: fadeInUp 0.8s ease-out 0.2s both;
 }
 
-/* ============================================================================
-   EYEBROW TEXT - Category/Library label (e.g., "SERIES", "MOVIES")
-   Uppercase accent text that appears above the title
-   ========================================================================== */
 .heroBannerPlugin-eyebrow {
     font-size: 0.85em;
     color: #7c3aed;
@@ -73,10 +68,6 @@
     animation: fadeInLeft 0.6s ease-out 0.3s both;
 }
 
-/* ============================================================================
-   TITLE TEXT - Main item name/heading
-   Large, bold text with dynamic sizing (clamp for responsiveness)
-   ========================================================================== */
 .heroBannerPlugin-title {
     font-size: clamp(2em, 5vw, 3.2em);
     font-weight: 800;
@@ -87,16 +78,13 @@
     animation: fadeInLeft 0.7s ease-out 0.4s both;
 }
 
-/* ============================================================================
-   OVERVIEW TEXT - Item description/synopsis
-   Limited to 3 lines with text ellipsis, smooth fade animation
-   ========================================================================== */
 .heroBannerPlugin-overview {
     font-size: 0.95em;
     line-height: 1.45;
     color: #e5e5e5;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     margin-bottom: 1.25em;
@@ -283,7 +271,7 @@
     .heroBannerPlugin {
         height: 50vh;
         min-height: 280px;
-        margin-bottom: 0;
+        margin-bottom: 0.75rem;
         border-radius: 8px;
     }
 
@@ -310,6 +298,7 @@
     /* Limit overview lines and reduce font size on mobile */
     .heroBannerPlugin-overview {
         -webkit-line-clamp: 2;
+        line-clamp: 2;
         font-size: 0.8em;
         line-height: 1.3;
         margin-bottom: 0.8em;
