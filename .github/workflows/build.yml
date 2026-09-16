@@ -1,0 +1,94 @@
+name: Build and release plugin
+
+on:
+  push:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Read version from csproj
+        id: version
+        run: |
+          VERSION=$(grep -oPm1 "(?<=<AssemblyVersion>)[^<]+" Jellyfin.Plugin.HeroBanner.csproj)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Restore
+        run: dotnet restore Jellyfin.Plugin.HeroBanner.csproj
+
+      - name: Publish
+        run: dotnet publish Jellyfin.Plugin.HeroBanner.csproj -c Release -o out
+
+      - name: Package plugin zip
+        id: package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ZIP_NAME="herobanner_${VERSION}.zip"
+          cd out
+          zip "../$ZIP_NAME" Jellyfin.Plugin.HeroBanner.dll
+          cd ..
+          CHECKSUM=$(md5sum "$ZIP_NAME" | cut -d ' ' -f1)
+          echo "zip_name=$ZIP_NAME" >> "$GITHUB_OUTPUT"
+          echo "checksum=$CHECKSUM" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          files: ${{ steps.package.outputs.zip_name }}
+          fail_on_unmatched_files: true
+
+      - name: Generate manifest.json
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          CHECKSUM="${{ steps.package.outputs.checksum }}"
+          ZIP_NAME="${{ steps.package.outputs.zip_name }}"
+          REPO="${{ github.repository }}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          SOURCE_URL="https://github.com/${REPO}/releases/download/v${VERSION}/${ZIP_NAME}"
+
+          cat > manifest.json << 'INNEREOF'
+          [
+            {
+              "guid": "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f",
+              "name": "Hero Banner",
+              "description": "Adds a rotating hero banner of the latest additions per library to the home screen.",
+              "overview": "Adds a rotating hero banner of the latest additions per library to the home screen.",
+              "owner": "PLACEHOLDER_OWNER",
+              "category": "General",
+              "imageUrl": "",
+              "versions": [
+                {
+                  "version": "PLACEHOLDER_VERSION",
+                  "changelog": "Initial release.",
+                  "targetAbi": "10.9.0.0",
+                  "sourceUrl": "PLACEHOLDER_URL",
+                  "checksum": "PLACEHOLDER_CHECKSUM",
+                  "timestamp": "PLACEHOLDER_TIMESTAMP"
+                }
+              ]
+            }
+          ]
+          INNEREOF
+          sed -i "s#PLACEHOLDER_OWNER#${{ github.repository_owner }}#; s#PLACEHOLDER_VERSION#${VERSION}#; s#PLACEHOLDER_URL#${SOURCE_URL}#; s#PLACEHOLDER_CHECKSUM#${CHECKSUM}#; s#PLACEHOLDER_TIMESTAMP#${TIMESTAMP}#" manifest.json
+
+      - name: Commit manifest.json back to the repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git diff --staged --quiet || git commit -m "Update manifest.json for v${{ steps.version.outputs.version }}"
+          git push
