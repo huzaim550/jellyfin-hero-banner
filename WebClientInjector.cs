@@ -15,14 +15,9 @@ namespace Jellyfin.Plugin.HeroBanner
 
         public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
         {
-            var serviceProvider = serviceCollection.BuildServiceProvider();
-            var applicationPaths = serviceProvider.GetService<IApplicationPaths>();
-            var logger = serviceProvider.GetService<ILogger<WebClientInjector>>();
-
-            if (applicationPaths != null && logger != null)
-            {
-                Inject(applicationPaths, logger);
-            }
+            // The web client patch is applied from Plugin startup so it runs with the
+            // real application paths and logger, without building a temporary
+            // service provider from the plugin registration collection.
         }
 
         internal static void Inject(IApplicationPaths applicationPaths, ILogger logger)
@@ -34,10 +29,9 @@ namespace Jellyfin.Plugin.HeroBanner
                 return;
             }
 
-            var version = Plugin.Instance?.Version.ToString() ?? "1.0.3.0";
+            var version = Plugin.Instance?.Version.ToString() ?? "1.0.5.0";
             var html = File.ReadAllText(indexPath);
 
-            // Corrected filenames to match embedded resources in .csproj
             var snippet = MarkerStart +
                 $"<link rel=\"stylesheet\" href=\"/HeroBanner/heroBanner.css?v={version}\">" +
                 $"<script defer src=\"/HeroBanner/heroBanner.js?v={version}\"></script>" +

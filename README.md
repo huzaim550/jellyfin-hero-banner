@@ -13,8 +13,8 @@ directly control. So this plugin:
 1. On server startup, patches the web client's `index.html` to load one extra
    `<script>` and `<link>` tag (between HTML comment markers, so it's easy to
    find and undo).
-2. Serves that script/stylesheet itself from `/HeroBanner/ClientScript.js` and
-   `/HeroBanner/ClientStyle.css`.
+2. Serves that script/stylesheet itself from `/HeroBanner/heroBanner.js` and
+   `/HeroBanner/heroBanner.css`.
 3. The script waits for the page's existing `ApiClient` (already logged in),
    fetches the latest item per library, and renders the banner into the home
    page.
@@ -98,8 +98,8 @@ patch it, add these two lines yourself just before `</head>` in your web
 client's `index.html`:
 
 ```html
-<link rel="stylesheet" href="/HeroBanner/ClientStyle.css">
-<script defer src="/HeroBanner/ClientScript.js"></script>
+<link rel="stylesheet" href="/HeroBanner/heroBanner.css">
+<script defer src="/HeroBanner/heroBanner.js"></script>
 ```
 
 ## Uninstall

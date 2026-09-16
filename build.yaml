@@ -1,6 +1,6 @@
 name: "Hero Banner"
 guid: "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f"
-version: "1.0.4.0"
+version: "1.0.5.0"
 targetAbi: "10.9.11.0"
 framework: "net8.0"
 owner: "huzaim550"
@@ -13,4 +13,5 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.HeroBanner.dll"
 changelog: >
-  - 1.0.3.0: Fix settings persistence, banner layout, and package compatibility with Jellyfin 10.9.11.
+  - 1.0.5.0: Fix startup injection lifecycle issues and keep the plugin version metadata aligned across build and release files.
+  - 1.0.4.0: Fix settings persistence, banner layout, mobile spacing, and plugin compatibility.

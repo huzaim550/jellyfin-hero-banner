@@ -28,6 +28,15 @@ namespace Jellyfin.Plugin.HeroBanner
             _applicationPaths = applicationPaths;
             _logger = logger;
             Instance = this;
+
+            try
+            {
+                WebClientInjector.Inject(_applicationPaths, _logger);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Hero Banner failed to inject the web client script");
+            }
         }
 
         /// <inheritdoc />
