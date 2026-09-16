@@ -1,11 +1,11 @@
 .heroBannerPlugin {
     position: relative;
     width: 100%;
-    height: 46vh;
-    min-height: 320px;
-    max-height: 560px;
+    height: 60vh;
+    min-height: 380px;
+    max-height: 600px;
     overflow: hidden;
-    margin-bottom: 1.5em;
+    margin-bottom: -2em; /* Pulls lower sections up into the smooth bottom fade */
     background-color: #0b0b0d;
 }
 
@@ -17,126 +17,152 @@
     transition: background-image 0.6s ease-in-out;
 }
 
+/* Netflix Dual Scrim Overlays */
 .heroBannerPlugin-scrim {
     position: absolute;
     inset: 0;
+    /* Bottom fade dissolves seamlessly into the rest of Jellyfin */
+    /* Left dark overlay ensures maximum text contrast */
     background:
-        linear-gradient(180deg, rgba(11, 11, 13, 0) 40%, rgba(11, 11, 13, 0.85) 92%, #0b0b0d 100%),
-        linear-gradient(90deg, rgba(11, 11, 13, 0.75) 0%, rgba(11, 11, 13, 0.15) 55%, rgba(11, 11, 13, 0) 75%);
+        linear-gradient(180deg, rgba(11, 11, 13, 0.1) 0%, rgba(11, 11, 13, 0.4) 50%, #0b0b0d 100%),
+        linear-gradient(90deg, rgba(11, 11, 13, 0.92) 0%, rgba(11, 11, 13, 0.6) 45%, rgba(11, 11, 13, 0) 80%);
 }
 
 .heroBannerPlugin-content {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 2.75em;
-    padding: 0 3.5vw;
-    max-width: 640px;
-    color: #f5f5f2;
+    bottom: 3.5em;
+    padding: 0 4vw;
+    max-width: 650px;
+    color: #ffffff;
+    z-index: 2;
 }
 
+/* Netflix-style Eyebrow / Red Tag */
 .heroBannerPlugin-eyebrow {
     font-size: 0.85em;
-    color: #d8b25c;
-    margin-bottom: 0.4em;
-    font-weight: 600;
+    color: #e50914; /* Netflix Red Accent */
+    margin-bottom: 0.5em;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .heroBannerPlugin-title {
-    font-size: clamp(1.6em, 4vw, 2.7em);
-    font-weight: 700;
-    line-height: 1.1;
+    font-size: clamp(2em, 5vw, 3.2em);
+    font-weight: 800;
+    line-height: 1.05;
     margin-bottom: 0.4em;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+    text-shadow: 0 3px 10px rgba(0, 0, 0, 0.9);
 }
 
 .heroBannerPlugin-overview {
     font-size: 0.95em;
-    line-height: 1.5;
-    color: #d5d5d2;
+    line-height: 1.45;
+    color: #e5e5e5;
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin-bottom: 1em;
+    margin-bottom: 1.25em;
     max-width: 52ch;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
 }
 
 .heroBannerPlugin-actions {
     display: flex;
+    align-items: center;
     gap: 0.75em;
 }
 
 .heroBannerPlugin-actions button {
     border: none;
     border-radius: 4px;
-    padding: 0.65em 1.5em;
+    padding: 0.65em 1.6em;
     font-size: 0.95em;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
 }
 
+/* Solid White Play Button */
 .heroBannerPlugin-play {
-    background: #f5f5f2;
-    color: #0b0b0d;
+    background: #ffffff;
+    color: #000000;
 }
 
 .heroBannerPlugin-play:hover {
+    background: rgba(255, 255, 255, 0.85);
     transform: scale(1.03);
 }
 
+/* Glassmorphism More Info Button */
 .heroBannerPlugin-more {
-    background: rgba(255, 255, 255, 0.16);
-    color: #f5f5f2;
-    backdrop-filter: blur(6px);
+    background: rgba(109, 109, 110, 0.7);
+    color: #ffffff;
+    backdrop-filter: blur(8px);
 }
 
 .heroBannerPlugin-more:hover {
-    background: rgba(255, 255, 255, 0.26);
+    background: rgba(109, 109, 110, 0.4);
+    transform: scale(1.03);
 }
 
 .heroBannerPlugin-actions button:focus-visible,
 .heroBannerPlugin-dot:focus-visible {
-    outline: 2px solid #d8b25c;
+    outline: 2px solid #ffffff;
     outline-offset: 2px;
 }
 
+/* Modern Pill Dots */
 .heroBannerPlugin-dots {
     position: absolute;
     right: 3vw;
-    bottom: 1.25em;
+    bottom: 2em;
     display: flex;
-    gap: 0.4em;
+    align-items: center;
+    gap: 0.5em;
+    z-index: 3;
 }
 
 .heroBannerPlugin-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.4);
     cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .heroBannerPlugin-dot.active {
-    background: #d8b25c;
-    transform: scale(1.25);
+    width: 22px;
+    border-radius: 4px;
+    background: #ffffff;
 }
 
 @media (max-width: 640px) {
     .heroBannerPlugin {
-        height: 40vh;
-        min-height: 260px;
+        height: 48vh;
+        min-height: 300px;
+        margin-bottom: 0;
     }
 
     .heroBannerPlugin-content {
-        bottom: 1.5em;
-        max-width: 90%;
+        bottom: 2em;
+        max-width: 95%;
+        padding: 0 1.5em;
     }
 
     .heroBannerPlugin-overview {
         -webkit-line-clamp: 2;
+        font-size: 0.85em;
+    }
+
+    .heroBannerPlugin-dots {
+        bottom: 1.25em;
     }
 }
 
