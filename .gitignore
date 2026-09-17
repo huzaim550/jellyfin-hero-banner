@@ -1,0 +1,29 @@
+# Build outputs
+bin/
+obj/
+out/
+artifacts/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# JetBrains / OS files
+.idea/
+.DS_Store
+Thumbs.db
+
+# NuGet
+packages/
+*.nupkg
+
+# Local logs / temp
+*.log
+*.tmp
+
+# Release packaging folders
+release/
