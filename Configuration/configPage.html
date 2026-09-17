@@ -69,14 +69,32 @@
                 return Math.min(max, Math.max(min, parsed));
             }
 
+            function applyConfigToForm(page, config) {
+                if (!config) {
+                    config = {};
+                }
+
+                page.querySelector("#RotationSeconds").value = clamp(config.RotationSeconds, 3, 60, 8);
+                page.querySelector("#ItemsPerLibrary").value = clamp(config.ItemsPerLibrary, 1, 20, 1);
+                page.querySelector("#IncludedLibraryNames").value = config.IncludedLibraryNames || "";
+                page.querySelector("#ExcludedLibraryNames").value = config.ExcludedLibraryNames || "";
+                page.querySelector("#ShowOverview").checked = !!config.ShowOverview;
+            }
+
+            function readConfigFromForm(page) {
+                return {
+                    RotationSeconds: clamp(page.querySelector("#RotationSeconds").value, 3, 60, 8),
+                    ItemsPerLibrary: clamp(page.querySelector("#ItemsPerLibrary").value, 1, 20, 1),
+                    IncludedLibraryNames: (page.querySelector("#IncludedLibraryNames").value || "").trim(),
+                    ExcludedLibraryNames: (page.querySelector("#ExcludedLibraryNames").value || "").trim(),
+                    ShowOverview: !!page.querySelector("#ShowOverview").checked
+                };
+            }
+
             function loadConfig(page) {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    page.querySelector("#RotationSeconds").value = clamp(config.RotationSeconds, 3, 60, 8);
-                    page.querySelector("#ItemsPerLibrary").value = clamp(config.ItemsPerLibrary, 1, 20, 1);
-                    page.querySelector("#IncludedLibraryNames").value = config.IncludedLibraryNames || "";
-                    page.querySelector("#ExcludedLibraryNames").value = config.ExcludedLibraryNames || "";
-                    page.querySelector("#ShowOverview").checked = !!config.ShowOverview;
+                    applyConfigToForm(page, config || {});
                     Dashboard.hideLoadingMsg();
                 }).catch(function (err) {
                     Dashboard.hideLoadingMsg();
@@ -87,22 +105,12 @@
             function saveConfig(page) {
                 Dashboard.showLoadingMsg();
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    config.RotationSeconds = clamp(page.querySelector("#RotationSeconds").value, 3, 60, 8);
-                    config.ItemsPerLibrary = clamp(page.querySelector("#ItemsPerLibrary").value, 1, 20, 1);
-                    config.IncludedLibraryNames = (page.querySelector("#IncludedLibraryNames").value || "").trim();
-                    config.ExcludedLibraryNames = (page.querySelector("#ExcludedLibraryNames").value || "").trim();
-                    config.ShowOverview = !!page.querySelector("#ShowOverview").checked;
+                    var nextConfig = Object.assign({}, config || {}, readConfigFromForm(page));
 
-                    ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                    ApiClient.updatePluginConfiguration(pluginId, nextConfig).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
                         Dashboard.hideLoadingMsg();
-                        if (window.opener && window.opener.location) {
-                            window.opener.location.reload();
-                        } else {
-                            setTimeout(function () {
-                                window.location.reload();
-                            }, 150);
-                        }
+                        applyConfigToForm(page, nextConfig);
                     }).catch(function (err) {
                         Dashboard.hideLoadingMsg();
                         Dashboard.alert("Error saving settings: " + err);
