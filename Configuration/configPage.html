@@ -104,27 +104,26 @@
 
             function saveConfig(page) {
                 Dashboard.showLoadingMsg();
-                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    var nextConfig = Object.assign({}, config || {}, readConfigFromForm(page));
 
-                    ApiClient.updatePluginConfiguration(pluginId, nextConfig).then(function (result) {
+                var config = readConfigFromForm(page);
+
+                ApiClient.updatePluginConfiguration(pluginId, config)
+                    .then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
-                        Dashboard.hideLoadingMsg();
-                        applyConfigToForm(page, nextConfig);
+                        applyConfigToForm(page, config);
 
                         if (window.dispatchEvent) {
                             window.dispatchEvent(new CustomEvent("heroBanner-config-updated", {
-                                detail: { config: nextConfig }
+                                detail: { config: config }
                             }));
                         }
-                    }).catch(function (err) {
+                    })
+                    .catch(function (err) {
+                        Dashboard.alert("Error saving settings: " + (err && err.message ? err.message : err));
+                    })
+                    .finally(function () {
                         Dashboard.hideLoadingMsg();
-                        Dashboard.alert("Error saving settings: " + err);
                     });
-                }).catch(function (err) {
-                    Dashboard.hideLoadingMsg();
-                    Dashboard.alert("Error loading settings: " + err);
-                });
             }
 
             document.querySelector("#HeroBannerConfigPage").addEventListener("pageshow", function () {
