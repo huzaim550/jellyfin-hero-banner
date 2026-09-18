@@ -24,11 +24,36 @@ every server start — which also means it survives Jellyfin server *updates*
 (which overwrite `index.html`), since it's re-run each restart.
 
 **Heads up:** the exact home-page DOM structure isn't a documented, stable
-API and can differ between Jellyfin versions/skins. `Web/heroBanner.js` tries
-several selectors (see `findHomeContentTarget()`); if the banner doesn't show
-up on your version, open your browser's dev tools on the Jellyfin home page,
-find the container that wraps the home sections, and add its selector to that
-list.
+API and can differ between Jellyfin versions/skins. `Web/heroBanner.js` looks
+for the home page's own tab container (see `findHomeTab()`); if the banner
+doesn't show up on your version, open your browser's dev tools on the Jellyfin
+home page, find the container that wraps the home sections, and update that
+function.
+
+## Settings
+
+Dashboard → Plugins → Hero Banner:
+
+| Setting | What it does |
+| --- | --- |
+| Rotation interval | Seconds each title stays on screen before rotating (3–60). |
+| How many titles will slide | Most recently added items to pull per library (1–20). |
+| Only include these libraries | Comma-separated allow-list of library names. Blank means every library. |
+| Exclude these libraries | Comma-separated list of library names to always leave out. Exclusions win over inclusions. |
+| Show the overview text | Whether the plot summary appears on the banner. |
+
+Library names are matched case-insensitively, and surrounding spaces are
+ignored, so `Movies` and ` movies ` are the same library. If the include list
+matches nothing (or every library is empty), the banner takes itself out of the
+layout rather than leaving an empty box above your libraries.
+
+The banner is scoped to the Home tab, so it doesn't follow you to Favorites or
+any other page. It reads its settings when it loads, so a browser that is
+already open picks changes up the next time the page loads.
+
+The settings endpoint (`/HeroBanner/Settings`) only serves signed-in users; the
+banner reads it through the web client's `ApiClient` so the access token is
+sent along.
 
 ## Easiest path: let GitHub build it, add it as a repository (no coding needed)
 
@@ -82,7 +107,9 @@ versions are the most common reason a plugin fails to load.
    - Docker: the path you mounted to `/config`, under `plugins/`
    - Linux: `/var/lib/jellyfin/plugins/`
    - Windows: `%ProgramData%\Jellyfin\Server\plugins\`
-2. Create a folder there, e.g. `plugins/Hero Banner_1.0.0.0/`.
+2. Create a folder there, e.g. `plugins/HeroBanner_1.0.12.0/`. The name is up to
+   you, but keeping the version in it (matching `<AssemblyVersion>`) makes it
+   obvious which build is installed.
 3. Copy `out/Jellyfin.Plugin.HeroBanner.dll` into it.
 4. Restart Jellyfin.
 5. Check **Dashboard → Plugins** — "Hero Banner" should be listed. Open it to

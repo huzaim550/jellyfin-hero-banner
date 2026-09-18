@@ -27,3 +27,7 @@ packages/
 
 # Release packaging folders
 release/
+publish/
+
+# Packaged plugin releases (built by CI, uploaded as release assets)
+*.zip

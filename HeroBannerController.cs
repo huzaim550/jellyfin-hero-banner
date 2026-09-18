@@ -50,11 +50,19 @@ namespace Jellyfin.Plugin.HeroBanner
 
         /// <summary>
         /// Returns the subset of plugin configuration the client script needs.
-        /// Kept separate from Jellyfin's own plugin-configuration endpoint so the
-        /// home screen script doesn't need an admin-level token to read it.
+        /// Separate from Jellyfin's own plugin-configuration endpoint so a signed-in
+        /// user can read it without admin rights - but not anonymous callers, who
+        /// would otherwise be able to read the server's library names and settings
+        /// straight off the login screen. The client script requests this through
+        /// ApiClient so its access token is sent along.
         /// </summary>
+        /// <remarks>
+        /// [Authorize] is required explicitly: Jellyfin does not apply a fallback
+        /// authorization policy to plugin controllers, so leaving it off serves this
+        /// endpoint to anonymous callers.
+        /// </remarks>
         [HttpGet("Settings")]
-        [AllowAnonymous]
+        [Authorize]
         public ActionResult<object> GetSettings()
         {
             var config = Plugin.Instance?.Configuration ?? new PluginConfiguration();
