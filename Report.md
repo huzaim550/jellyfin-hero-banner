@@ -214,6 +214,78 @@ refresh can retry.
 
 ---
 
+## Bug 8 — Every release shipped the same generic changelog
+
+### Symptom
+
+The changelog text written by hand in `build.yaml` never reached users. In
+Jellyfin's plugin catalog every version read *"Bug fixes and improvements for
+plugin settings persistence and banner layout."* — including releases that had
+nothing to do with either.
+
+### Root cause
+
+`.github/workflows/build.yml` runs on every push and rewrites `manifest.json`.
+It built the version entry with a **hardcoded** changelog string:
+
+```python
+"changelog": "Bug fixes and improvements for plugin settings persistence and banner layout."
+```
+
+`build.yaml` — the file that is actually curated per release — was never read.
+So the workflow overwrote the real entry every time it ran, and the catalog
+entry for a release described a bug that release may never have had.
+
+### Fix
+
+The workflow now reads the changelog for the version it is building out of
+`build.yaml`:
+
+```python
+pattern = r"^\s*-\s*" + re.escape(version) + r"\s*:\s*(.+?)(?=^\s*-\s*\d+\.\d+\.\d+\.\d+\s*:|\Z)"
+```
+
+The entry is matched by version, and the YAML folded scalar is unwrapped. If a
+version has no `build.yaml` entry the workflow keeps whatever that version
+already had in `manifest.json`, and only falls back to the generic line when
+there is nothing to keep — so re-running the job can never degrade an entry that
+is already published.
+
+Tested against the real files: 1.0.12.0, 1.0.11.0 and 1.0.6.0 all extract
+correctly, and an unknown version falls back as intended.
+
+The `TIMESTAMP: ${{ github.run_id }}` env line was also removed — it was never
+read, and a run ID is not a timestamp.
+
+---
+
+## Visual refresh (1.0.13.0)
+
+Not a bug fix — a pass over the banner's appearance, which matters because this
+is a public plugin and the banner is the first thing on the home screen.
+
+| Before | After |
+| --- | --- |
+| Backdrop swapped instantly | Two stacked layers, cross-faded over 0.9 s |
+| Static artwork | Slow 30 s push-in on the visible layer |
+| Library name as plain text | Badge with accent tint and blur |
+| Title and overview only | Year / rating / runtime / genres line under the title |
+| Text-only buttons | Play and More info with inline SVG icons |
+| Dots that just highlight | Pills that fill over the rotation interval, clickable, keyboard-reachable |
+| Text appeared at once | Staged entrance, replaying on every slide |
+
+The fallback for an item with no artwork — a music album, home video, or a
+freshly added file — is now a tinted radial gradient rather than a flat black
+rectangle. Narrow screens and `prefers-reduced-motion` are handled; the rotation
+itself continues under reduced motion, since it is content rather than
+decoration.
+
+Verified visually in Chromium at 1440×900 and 400×780, against deliberately
+hostile artwork (a busy bright fractal backdrop, to confirm the text stays
+readable in the worst case).
+
+---
+
 ## Notes on things that were checked and are *not* bugs
 
 - **Jellyfin 10.11 compatibility.** The plugin is compiled against the 10.9.11
@@ -238,6 +310,8 @@ refresh can retry.
 | `HeroBannerController.cs` | `[Authorize]` on the settings endpoint (6) |
 | `README.md` | Corrected a stale function reference; documented the settings |
 | `.gitignore` | Ignore `publish/` and packaged `*.zip` releases |
+| `.github/workflows/build.yml` | Read the changelog from `build.yaml` instead of a hardcoded string (8) |
+| `build.yaml`, `manifest.json` | Version 1.0.13.0; corrected the changelog entries for 1.0.12.0 and 1.0.11.0 |
 
 ## How this was verified
 
@@ -248,13 +322,8 @@ dashboard form, persistence across a page reload, the empty-filter state, single
 and multiple slides, name matching, and console errors.
 
 **Result: 21/21 behavioural checks and 9/9 edge-case checks pass on both Jellyfin
-10.9.11 and 10.11.11.**
-
-Those runs were against the build whose sources were identical to the released
-1.0.12.0 apart from the version string itself. After bumping the version, the
-1.0.12.0 build was deployed to both servers and confirmed to load
-(`Loaded plugin: Hero Banner 1.0.12.0`) and to serve the settings endpoint; the
-suites were not re-run against it.
+10.9.11 and 10.11.11** — re-run against the restyled 1.0.13.0 build, so the suite
+result quoted here and the released artifact are the same code.
 
 A bug in the *test suite* was found and fixed along the way: it asserted against
 Jellyfin 10.9's `movies.html` routes, but 10.11 uses slug routes
@@ -264,24 +333,26 @@ happened before checking the result.
 
 ## Release
 
-Version bumped to **1.0.12.0** in `Jellyfin.Plugin.HeroBanner.csproj`
-(`AssemblyVersion` + `FileVersion`), `build.yaml` and `manifest.json`, as
-AGENTS.md requires before distributing a build.
+Version bumped to **1.0.13.0** in `Jellyfin.Plugin.HeroBanner.csproj`
+(`AssemblyVersion` + `FileVersion`) and `build.yaml`.
+
+**About the checksum.** A zip's MD5 depends on the archiver and on file
+timestamps, so a zip built here and a zip built by CI do not share a hash even
+from identical sources. The release asset users actually download is the one CI
+builds, so `manifest.json` deliberately does **not** carry a hand-written
+checksum for 1.0.13.0 — writing one would guarantee a mismatch against CI's
+artifact and Jellyfin would reject the install. The workflow builds the zip,
+publishes the release, and writes the checksum of *that* zip into
+`manifest.json` in the same run, which is the only value that can be correct.
+
+For 1.0.12.0 and 1.0.11.0 that checksum was verified independently: the MD5 of
+the published release asset was downloaded and compared against the entry in
+`manifest.json`, and they matched — so the repository entries are genuinely
+installable.
+
+To build and package by hand:
 
 ```bash
 dotnet publish Jellyfin.Plugin.HeroBanner.csproj -c Release -o out
-cd out && zip ../herobanner_1.0.12.0.zip Jellyfin.Plugin.HeroBanner.dll
+cd out && zip ../herobanner_1.0.13.0.zip Jellyfin.Plugin.HeroBanner.dll
 ```
-
-| | |
-| --- | --- |
-| Artifact | `herobanner_1.0.12.0.zip` (DLL only, as CI packages it) |
-| MD5 | `43a521af6c69da45852116bb86ce79d8` |
-| Size | 16,249 bytes |
-
-One caveat about the checksum: a zip's MD5 depends on the archiver and file
-timestamps, so a zip rebuilt by CI will not have this same hash. The workflow in
-`.github/workflows/build.yml` builds its own zip and writes the real checksum
-back into `manifest.json` on every push, so that value is authoritative — the
-one above is correct for the artifact built here, and should be used if this zip
-is the one uploaded to the release.

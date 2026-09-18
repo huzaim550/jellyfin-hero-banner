@@ -65,6 +65,7 @@ jobs:
           python3 <<'PY'
           import json
           import os
+          import re
 
           VERSION = os.environ["VERSION"]
           CHECKSUM = os.environ["CHECKSUM"]
@@ -92,9 +93,41 @@ jobs:
 
           manifest[0]["versions"] = [v for v in manifest[0]["versions"] if v["version"] != VERSION]
 
+          def changelog_for(version):
+              """The curated changelog for a release.
+
+              Read from build.yaml, which is where the changelog is written by
+              hand for each version. Hardcoding a generic line here used to
+              overwrite it on every push, so the entry users see in
+              Dashboard > Plugins never described the actual release.
+              """
+              try:
+                  with open("build.yaml", "r", encoding="utf-8") as f:
+                      text = f.read()
+              except OSError:
+                  text = ""
+
+              # Entries look like "  - 1.0.12.0: text", and the YAML folded
+              # scalar may wrap an entry across several lines.
+              pattern = (
+                  r"^\s*-\s*" + re.escape(version) +
+                  r"\s*:\s*(.+?)(?=^\s*-\s*\d+\.\d+\.\d+\.\d+\s*:|\Z)"
+              )
+              match = re.search(pattern, text, re.MULTILINE | re.DOTALL)
+              if match:
+                  return " ".join(match.group(1).split())
+
+              # Otherwise keep whatever this version already had, so re-running
+              # the job never degrades an entry that is already published.
+              for entry in manifest[0]["versions"]:
+                  if entry.get("version") == version and entry.get("changelog"):
+                      return entry["changelog"]
+
+              return "Bug fixes and improvements."
+
           new_version = {
               "version": VERSION,
-              "changelog": "Bug fixes and improvements for plugin settings persistence and banner layout.",
+              "changelog": changelog_for(VERSION),
               "targetAbi": "10.9.11.0",
               "sourceUrl": SOURCE_URL,
               "checksum": CHECKSUM,
@@ -110,7 +143,6 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           CHECKSUM: ${{ steps.package.outputs.checksum }}
           SOURCE_URL: https://github.com/${{ github.repository }}/releases/download/v${{ steps.version.outputs.version }}/${{ steps.package.outputs.zip_name }}
-          TIMESTAMP: ${{ github.run_id }}
 
       - name: Commit manifest.json back to the repo
         run: |
