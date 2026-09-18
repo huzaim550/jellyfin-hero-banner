@@ -103,28 +103,45 @@
             }
 
             function saveConfig(page) {
-                Dashboard.showLoadingMsg();
+    var config;
+    try {
+        config = readConfigFromForm(page);
+    } catch (err) {
+        console.error("Hero Banner: failed reading form values", err);
+        showStatus("Couldn't read the form values. Check console.", "error");
+        return;
+    }
 
-                var config = readConfigFromForm(page);
+    if (!window.ApiClient || typeof ApiClient.updatePluginConfiguration !== "function") {
+        console.error("Hero Banner: ApiClient.updatePluginConfiguration unavailable");
+        showStatus("Dashboard API isn't ready yet — reload the page and retry.", "error");
+        return;
+    }
 
-                ApiClient.updatePluginConfiguration(pluginId, config)
-                    .then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                        applyConfigToForm(page, config);
+    Dashboard.showLoadingMsg();
 
-                        if (window.dispatchEvent) {
-                            window.dispatchEvent(new CustomEvent("heroBanner-config-updated", {
-                                detail: { config: config }
-                            }));
-                        }
-                    })
-                    .catch(function (err) {
-                        Dashboard.alert("Error saving settings: " + (err && err.message ? err.message : err));
-                    })
-                    .finally(function () {
-                        Dashboard.hideLoadingMsg();
-                    });
+    ApiClient.updatePluginConfiguration(pluginId, config)
+        .then(function (result) {
+            if (result && result.Success === false) {
+                throw new Error(result.Error || "Unknown save error");
             }
+            applyConfigToForm(page, config);
+            if (window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent("heroBanner-config-updated", { detail: { config: config } }));
+            }
+            if (Dashboard && Dashboard.processPluginConfigurationUpdateResult) {
+                Dashboard.processPluginConfigurationUpdateResult(result);
+            }
+            showStatus("Settings saved.", "success");
+        })
+        .catch(function (err) {
+            console.error("Hero Banner config save failed", err);
+            showStatus("Settings could not be saved: " + (err && err.message ? err.message : "unknown error"), "error");
+        })
+        .finally(function () {
+            Dashboard.hideLoadingMsg();
+        });
+}
 
             document.querySelector("#HeroBannerConfigPage").addEventListener("pageshow", function () {
                 loadConfig(this);
