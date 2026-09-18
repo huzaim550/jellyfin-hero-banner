@@ -341,6 +341,12 @@
         });
     }
 
+    window.addEventListener("heroBanner-config-updated", function () {
+        if (isHomeRoute()) {
+            loadBannerData();
+        }
+    });
+
     function init() {
         window.addEventListener("hashchange", checkRoute);
 

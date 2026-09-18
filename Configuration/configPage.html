@@ -111,6 +111,12 @@
                         Dashboard.processPluginConfigurationUpdateResult(result);
                         Dashboard.hideLoadingMsg();
                         applyConfigToForm(page, nextConfig);
+
+                        if (window.dispatchEvent) {
+                            window.dispatchEvent(new CustomEvent("heroBanner-config-updated", {
+                                detail: { config: nextConfig }
+                            }));
+                        }
                     }).catch(function (err) {
                         Dashboard.hideLoadingMsg();
                         Dashboard.alert("Error saving settings: " + err);
