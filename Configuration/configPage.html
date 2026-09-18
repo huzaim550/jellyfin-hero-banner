@@ -53,6 +53,7 @@
                             <span>Save</span>
                         </button>
                     </div>
+                    <div id="HeroBannerStatus" role="status" aria-live="polite" style="display:none; margin-top:12px; padding:8px 10px; border-radius:4px; font-size:0.95em;"></div>
                 </form>
             </div>
         </div>
@@ -60,6 +61,28 @@
     <script type="text/javascript">
         (function () {
             var pluginId = "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f";
+
+            function showStatus(message, type) {
+                var status = document.querySelector("#HeroBannerStatus");
+                if (!status) {
+                    return;
+                }
+
+                var isError = type === "error";
+                status.textContent = message || "";
+                status.style.display = "block";
+                status.style.background = isError ? "rgba(255, 100, 100, 0.12)" : "rgba(68, 209, 102, 0.12)";
+                status.style.borderLeft = "3px solid " + (isError ? "#ff7d7d" : "#5ad67d");
+                status.style.color = isError ? "#ffd6d6" : "#d9ffe4";
+
+                if (showStatus._timer) {
+                    clearTimeout(showStatus._timer);
+                }
+                showStatus._timer = setTimeout(function () {
+                    status.style.display = "none";
+                    status.textContent = "";
+                }, 2800);
+            }
 
             function clamp(value, min, max, fallback) {
                 var parsed = parseInt(value, 10);
@@ -103,28 +126,45 @@
             }
 
             function saveConfig(page) {
-                Dashboard.showLoadingMsg();
+    var config;
+    try {
+        config = readConfigFromForm(page);
+    } catch (err) {
+        console.error("Hero Banner: failed reading form values", err);
+        showStatus("Couldn't read the form values. Check console.", "error");
+        return;
+    }
 
-                var config = readConfigFromForm(page);
+    if (!window.ApiClient || typeof ApiClient.updatePluginConfiguration !== "function") {
+        console.error("Hero Banner: ApiClient.updatePluginConfiguration unavailable");
+        showStatus("Dashboard API isn't ready yet — reload the page and retry.", "error");
+        return;
+    }
 
-                ApiClient.updatePluginConfiguration(pluginId, config)
-                    .then(function (result) {
-                        Dashboard.processPluginConfigurationUpdateResult(result);
-                        applyConfigToForm(page, config);
+    Dashboard.showLoadingMsg();
 
-                        if (window.dispatchEvent) {
-                            window.dispatchEvent(new CustomEvent("heroBanner-config-updated", {
-                                detail: { config: config }
-                            }));
-                        }
-                    })
-                    .catch(function (err) {
-                        Dashboard.alert("Error saving settings: " + (err && err.message ? err.message : err));
-                    })
-                    .finally(function () {
-                        Dashboard.hideLoadingMsg();
-                    });
+    ApiClient.updatePluginConfiguration(pluginId, config)
+        .then(function (result) {
+            if (result && result.Success === false) {
+                throw new Error(result.Error || "Unknown save error");
             }
+            applyConfigToForm(page, config);
+            if (window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent("heroBanner-config-updated", { detail: { config: config } }));
+            }
+            if (Dashboard && Dashboard.processPluginConfigurationUpdateResult) {
+                Dashboard.processPluginConfigurationUpdateResult(result);
+            }
+            showStatus("Settings saved.", "success");
+        })
+        .catch(function (err) {
+            console.error("Hero Banner config save failed", err);
+            showStatus("Settings could not be saved: " + (err && err.message ? err.message : "unknown error"), "error");
+        })
+        .finally(function () {
+            Dashboard.hideLoadingMsg();
+        });
+}
 
             document.querySelector("#HeroBannerConfigPage").addEventListener("pageshow", function () {
                 loadConfig(this);
