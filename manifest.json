@@ -10,11 +10,11 @@
     "versions": [
       {
         "version": "1.0.8.0",
-        "changelog": "Fix the plugin dashboard save action so settings persist correctly and are immediately applied.",
+        "changelog": "Bug fixes and improvements for plugin settings persistence and banner layout.",
         "targetAbi": "10.9.11.0",
         "sourceUrl": "https://github.com/huzaim550/jellyfin-hero-banner/releases/download/v1.0.8.0/herobanner_1.0.8.0.zip",
-        "checksum": "c8f4eddcd80ef8e3c51487c2c74e029c",
-        "timestamp": "2026-09-18T08:55:00Z"
+        "checksum": "32c00817c25e5ea5611e62010ff54d08",
+        "timestamp": "2026-09-18T09:05:12Z"
       }
     ]
   }
