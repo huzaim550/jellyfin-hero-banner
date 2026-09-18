@@ -1,8 +1,14 @@
 # Hero Banner for Jellyfin
 
 Adds a rotating hero banner to the top of the Jellyfin home screen, showing the
-most recently added item from each of your libraries (backdrop image, title,
-overview, Play / More info buttons).
+most recently added item from each of your libraries — backdrop image, title,
+year/rating/runtime/genres, overview, and Play / More info buttons.
+
+Artwork cross-fades between titles with a slow push-in, the library name sits in
+a badge, and the slide indicators fill up over the rotation interval so you can
+see how long is left. Items with no artwork of their own get a tinted gradient
+rather than a black rectangle, and the layout adapts to narrow screens and
+honours `prefers-reduced-motion`.
 
 ## How it works
 
@@ -107,7 +113,7 @@ versions are the most common reason a plugin fails to load.
    - Docker: the path you mounted to `/config`, under `plugins/`
    - Linux: `/var/lib/jellyfin/plugins/`
    - Windows: `%ProgramData%\Jellyfin\Server\plugins\`
-2. Create a folder there, e.g. `plugins/HeroBanner_1.0.12.0/`. The name is up to
+2. Create a folder there, e.g. `plugins/HeroBanner_1.0.13.0/`. The name is up to
    you, but keeping the version in it (matching `<AssemblyVersion>`) makes it
    obvious which build is installed.
 3. Copy `out/Jellyfin.Plugin.HeroBanner.dll` into it.

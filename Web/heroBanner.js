@@ -15,13 +15,26 @@
         showOverview: true
     };
 
+    // Inline icons so the buttons don't depend on an icon font being present.
+    var ICON_PLAY =
+        '<svg class="heroBannerPlugin-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<path d="M8 5.14v13.72a1 1 0 0 0 1.54.84l10.29-6.86a1 1 0 0 0 0-1.68L9.54 4.3A1 1 0 0 0 8 5.14z"/>' +
+        "</svg>";
+
+    var ICON_INFO =
+        '<svg class="heroBannerPlugin-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zM13.4 17h-2.8v-1.4h.7v-3.2h-.7v-1.4h2.1v4.6h.7V17z"/>' +
+        "</svg>";
+
     var state = {
         slides: [],
         index: 0,
         timer: null,
         el: null,
         loading: false,
-        loaded: false
+        loaded: false,
+        // Which of the two stacked image layers is currently on top.
+        layer: 0
     };
 
     function normalizeConfig() {
@@ -116,7 +129,8 @@
                 var url = ApiClient.getUrl("Users/" + userId + "/Items/Latest", {
                     ParentId: view.Id,
                     Limit: CONFIG.itemsPerLibrary,
-                    Fields: "Overview",
+                    // The extra fields feed the meta line under the title.
+                    Fields: "Overview,ProductionYear,OfficialRating,RunTimeTicks,Genres",
                     ImageTypeLimit: 1,
                     EnableImageTypes: "Backdrop,Primary,Thumb"
                 });
@@ -179,19 +193,182 @@
         el.id = "heroBannerPlugin";
         el.className = "heroBannerPlugin";
         el.innerHTML =
-            '<div class="heroBannerPlugin-slides"></div>' +
+            '<div class="heroBannerPlugin-stage">' +
+                '<div class="heroBannerPlugin-slide"></div>' +
+                '<div class="heroBannerPlugin-slide"></div>' +
+            '</div>' +
             '<div class="heroBannerPlugin-scrim"></div>' +
             '<div class="heroBannerPlugin-content">' +
                 '<div class="heroBannerPlugin-eyebrow"></div>' +
                 '<div class="heroBannerPlugin-title"></div>' +
+                '<div class="heroBannerPlugin-meta"></div>' +
                 '<div class="heroBannerPlugin-overview"></div>' +
                 '<div class="heroBannerPlugin-actions">' +
-                    '<button type="button" class="heroBannerPlugin-play">Play</button>' +
-                    '<button type="button" class="heroBannerPlugin-more">More info</button>' +
+                    '<button type="button" class="heroBannerPlugin-play">' +
+                        ICON_PLAY + '<span>Play</span>' +
+                    '</button>' +
+                    '<button type="button" class="heroBannerPlugin-more">' +
+                        ICON_INFO + '<span>More info</span>' +
+                    '</button>' +
                 '</div>' +
             '</div>' +
             '<div class="heroBannerPlugin-dots"></div>';
         return el;
+    }
+
+    var preloaded = {};
+
+    // The cross-fade only looks right if the incoming artwork is already
+    // decoded, otherwise the layer fades in on an empty background.
+    function preloadImage(url, cb) {
+        if (!url || preloaded[url]) {
+            cb();
+            return;
+        }
+
+        var img = new Image();
+        img.onload = function () {
+            preloaded[url] = true;
+            cb();
+        };
+        img.onerror = function () {
+            // Show it anyway - the layer falls back to the banner background.
+            cb();
+        };
+        img.src = url;
+    }
+
+    // Guards against a slow image landing after the slide has already moved on.
+    var renderToken = 0;
+
+    function applySlideImage(url) {
+        var token = ++renderToken;
+
+        preloadImage(url, function () {
+            if (token !== renderToken || !state.el) {
+                return;
+            }
+
+            var layers = state.el.querySelectorAll(".heroBannerPlugin-slide");
+            if (layers.length < 2) {
+                return;
+            }
+
+            // background-image can't be transitioned, so the new image goes on
+            // the hidden layer and the two swap opacity. Clearing the inline
+            // style when there is no artwork lets the stylesheet's fallback
+            // gradient show through.
+            var next = layers[1 - state.layer];
+            var current = layers[state.layer];
+            next.style.backgroundImage = url ? 'url("' + url + '")' : "";
+            next.classList.add("is-active");
+            current.classList.remove("is-active");
+            state.layer = 1 - state.layer;
+        });
+    }
+
+    // Restarts the staged text entrance. Reading offsetWidth forces a reflow -
+    // without it the browser coalesces the class removal and the animation
+    // never replays.
+    function replayEntrance() {
+        var content = state.el.querySelector(".heroBannerPlugin-content");
+        if (!content) {
+            return;
+        }
+
+        content.classList.remove("is-entering");
+        void content.offsetWidth;
+        content.classList.add("is-entering");
+    }
+
+    function runtimeMinutes(ticks) {
+        if (!ticks) {
+            return 0;
+        }
+
+        // Jellyfin reports durations in ticks, 10,000 per millisecond.
+        return Math.round(ticks / 600000000);
+    }
+
+    // Year / rating / runtime / genres, skipping whatever the item doesn't have.
+    function renderMeta(item) {
+        var metaEl = state.el.querySelector(".heroBannerPlugin-meta");
+        metaEl.innerHTML = "";
+
+        var parts = [];
+        if (item.ProductionYear) {
+            parts.push(String(item.ProductionYear));
+        }
+        if (item.OfficialRating) {
+            parts.push(item.OfficialRating);
+        }
+
+        var minutes = runtimeMinutes(item.RunTimeTicks);
+        if (minutes) {
+            parts.push(minutes + " min");
+        }
+        if (item.Genres && item.Genres.length) {
+            parts.push(item.Genres.slice(0, 2).join(" / "));
+        }
+
+        if (!parts.length) {
+            metaEl.style.display = "none";
+            return;
+        }
+
+        parts.forEach(function (part, i) {
+            if (i > 0) {
+                var sep = document.createElement("span");
+                sep.className = "heroBannerPlugin-metaSep";
+                sep.setAttribute("aria-hidden", "true");
+                sep.textContent = "•";
+                metaEl.appendChild(sep);
+            }
+
+            var span = document.createElement("span");
+            span.textContent = part;
+            metaEl.appendChild(span);
+        });
+
+        metaEl.style.display = "";
+    }
+
+    // The active pill fills over the rotation interval, so the banner shows how
+    // long is left on the current title.
+    function renderDots() {
+        var dotsEl = state.el.querySelector(".heroBannerPlugin-dots");
+        dotsEl.innerHTML = "";
+
+        if (state.slides.length < 2) {
+            return;
+        }
+
+        state.slides.forEach(function (_, i) {
+            var dot = document.createElement("span");
+            dot.className = "heroBannerPlugin-dot" + (i === state.index ? " active" : "");
+            dot.setAttribute("role", "button");
+            dot.setAttribute("tabindex", "0");
+            dot.setAttribute("aria-label", "Slide " + (i + 1) + " of " + state.slides.length);
+
+            var fill = document.createElement("i");
+            fill.setAttribute("aria-hidden", "true");
+            if (i === state.index) {
+                fill.style.animationDuration = Math.max(3, CONFIG.rotationSeconds) + "s";
+            }
+            dot.appendChild(fill);
+
+            dot.addEventListener("click", function () {
+                goTo(i);
+            });
+            dot.addEventListener("keydown", function (e) {
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    goTo(i);
+                }
+            });
+
+            dotsEl.appendChild(dot);
+        });
     }
 
     function render() {
@@ -209,12 +386,13 @@
             return;
         }
 
-        var slidesEl = state.el.querySelector(".heroBannerPlugin-slides");
-        var url = imageUrl(item);
-        slidesEl.style.backgroundImage = url ? 'url("' + url + '")' : "none";
+        applySlideImage(imageUrl(item));
+        replayEntrance();
 
         state.el.querySelector(".heroBannerPlugin-eyebrow").textContent = item.__libraryName || "";
         state.el.querySelector(".heroBannerPlugin-title").textContent = item.Name || "";
+
+        renderMeta(item);
 
         var overviewEl = state.el.querySelector(".heroBannerPlugin-overview");
         if (CONFIG.showOverview && item.Overview) {
@@ -224,27 +402,7 @@
             overviewEl.style.display = "none";
         }
 
-        var dotsEl = state.el.querySelector(".heroBannerPlugin-dots");
-        dotsEl.innerHTML = "";
-        if (state.slides.length > 1) {
-            state.slides.forEach(function (_, i) {
-                var dot = document.createElement("span");
-                dot.className = "heroBannerPlugin-dot" + (i === state.index ? " active" : "");
-                dot.setAttribute("role", "button");
-                dot.setAttribute("tabindex", "0");
-                dot.setAttribute("aria-label", "Show slide " + (i + 1));
-                dot.addEventListener("click", function () {
-                    goTo(i);
-                });
-                dot.addEventListener("keydown", function (e) {
-                    if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        goTo(i);
-                    }
-                });
-                dotsEl.appendChild(dot);
-            });
-        }
+        renderDots();
 
         state.el.querySelector(".heroBannerPlugin-play").onclick = function () {
             location.hash = "#!/details?id=" + item.Id + "&autoplay=true";

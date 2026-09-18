@@ -10,7 +10,7 @@
     "versions": [
       {
         "version": "1.0.12.0",
-        "changelog": "Bug fixes and improvements for plugin settings persistence and banner layout.",
+        "changelog": "Fix the settings page never loading its script (fields were empty and Save did nothing), keep the banner on the Home tab instead of leaking onto Favorites, bring the banner back after navigating away and home again, stop the rotation timer from being reset by unrelated DOM changes, hide the banner when no library matches the filters, and require a signed-in user for the settings endpoint.",
         "targetAbi": "10.9.11.0",
         "sourceUrl": "https://github.com/huzaim550/jellyfin-hero-banner/releases/download/v1.0.12.0/herobanner_1.0.12.0.zip",
         "checksum": "633048f51d4c519ed6bf848207c77cdb",
@@ -18,7 +18,7 @@
       },
       {
         "version": "1.0.11.0",
-        "changelog": "Bug fixes and improvements for plugin settings persistence and banner layout.",
+        "changelog": "Guard the settings page and banner UI against missing dashboard APIs and empty slide state so configuration changes and home-page refreshes do not crash the page.",
         "targetAbi": "10.9.11.0",
         "sourceUrl": "https://github.com/huzaim550/jellyfin-hero-banner/releases/download/v1.0.11.0/herobanner_1.0.11.0.zip",
         "checksum": "f4c9c648dbda9035df2b8d24b93bcf9e",
