@@ -13,14 +13,16 @@
                         <h2>Hero Banner</h2>
                         <p>
                             Adds a rotating hero banner of the latest additions per library to the
-                            home screen. The banner reads its settings on page load, so changes take
-                            effect the next time a browser loads or refreshes Jellyfin.
+                            home screen. The banner reads its settings when it loads, so a browser
+                            that is already open picks the changes up the next time it loads or
+                            refreshes Jellyfin.
                         </p>
                     </div>
 
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="RotationSeconds">Rotation interval (seconds)</label>
                         <input is="emby-input" type="number" min="3" max="60" id="RotationSeconds" name="RotationSeconds" />
+                        <div class="fieldDescription">How long each title stays on screen before the banner rotates (3-60).</div>
                     </div>
 
                     <div class="inputContainer">
@@ -57,151 +59,220 @@
                 </form>
             </div>
         </div>
-    </div>
-    <script type="text/javascript">
-        (function () {
-            var pluginId = "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f";
-            var page = document.querySelector("#HeroBannerConfigPage");
-            var form = document.querySelector("#HeroBannerConfigForm");
 
-            if (!page || !form) {
-                return;
-            }
+        <!--
+            IMPORTANT: this script element must stay INSIDE the div that carries
+            data-role="page".
 
-            function showStatus(message, type) {
-                var status = document.querySelector("#HeroBannerStatus");
-                if (!status) {
+            jellyfin-web loads a plugin configuration page through
+            viewContainer.parseHtml(), which reduces the fetched document to the
+            single div[data-role="page"] element and then runs the script elements
+            found inside it. Anything placed next to that div - a script tag
+            after it, for example - is dropped before the browser ever sees it.
+            When that happens the form is never populated and the Save button has
+            no submit handler, so it appears to do nothing at all.
+        -->
+        <script type="text/javascript">
+            (function () {
+                "use strict";
+
+                var pluginId = "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f";
+
+                // The page markup is re-inserted every time the view is loaded, but
+                // this script can run more than once. Bind the delegated listeners
+                // only once so a Save is never sent twice.
+                if (window.__heroBannerConfigBound) {
                     return;
                 }
+                window.__heroBannerConfigBound = true;
 
-                var isError = type === "error";
-                status.textContent = message || "";
-                status.style.display = "block";
-                status.style.background = isError ? "rgba(255, 100, 100, 0.12)" : "rgba(68, 209, 102, 0.12)";
-                status.style.borderLeft = "3px solid " + (isError ? "#ff7d7d" : "#5ad67d");
-                status.style.color = isError ? "#ffd6d6" : "#d9ffe4";
-
-                if (showStatus._timer) {
-                    clearTimeout(showStatus._timer);
-                }
-                showStatus._timer = setTimeout(function () {
-                    status.style.display = "none";
-                    status.textContent = "";
-                }, 2800);
-            }
-
-            function clamp(value, min, max, fallback) {
-                var parsed = parseInt(value, 10);
-                if (isNaN(parsed)) {
-                    return fallback;
-                }
-                return Math.min(max, Math.max(min, parsed));
-            }
-
-            function applyConfigToForm(page, config) {
-                if (!config) {
-                    config = {};
+                function pageRoot() {
+                    return document.querySelector("#HeroBannerConfigPage");
                 }
 
-                page.querySelector("#RotationSeconds").value = clamp(config.RotationSeconds, 3, 60, 8);
-                page.querySelector("#ItemsPerLibrary").value = clamp(config.ItemsPerLibrary, 1, 20, 1);
-                page.querySelector("#IncludedLibraryNames").value = config.IncludedLibraryNames || "";
-                page.querySelector("#ExcludedLibraryNames").value = config.ExcludedLibraryNames || "";
-                page.querySelector("#ShowOverview").checked = !!config.ShowOverview;
-            }
-
-            function readConfigFromForm(page) {
-                return {
-                    RotationSeconds: clamp(page.querySelector("#RotationSeconds").value, 3, 60, 8),
-                    ItemsPerLibrary: clamp(page.querySelector("#ItemsPerLibrary").value, 1, 20, 1),
-                    IncludedLibraryNames: (page.querySelector("#IncludedLibraryNames").value || "").trim(),
-                    ExcludedLibraryNames: (page.querySelector("#ExcludedLibraryNames").value || "").trim(),
-                    ShowOverview: !!page.querySelector("#ShowOverview").checked
-                };
-            }
-
-            function loadConfig(page) {
-                if (window.Dashboard && typeof Dashboard.showLoadingMsg === "function") {
-                    Dashboard.showLoadingMsg();
+                function field(root, selector) {
+                    return root ? root.querySelector(selector) : null;
                 }
 
-                if (!window.ApiClient || typeof ApiClient.getPluginConfiguration !== "function") {
-                    if (window.Dashboard && typeof Dashboard.alert === "function") {
-                        Dashboard.alert("Error loading settings: Dashboard API isn't ready yet.");
+                function showStatus(message, type) {
+                    var status = field(pageRoot(), "#HeroBannerStatus");
+                    if (!status) {
+                        return;
                     }
-                    return;
-                }
 
-                ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-                    applyConfigToForm(page, config || {});
-                    if (window.Dashboard && typeof Dashboard.hideLoadingMsg === "function") {
-                        Dashboard.hideLoadingMsg();
+                    var isError = type === "error";
+                    status.textContent = message || "";
+                    status.style.display = "block";
+                    status.style.background = isError ? "rgba(255, 100, 100, 0.12)" : "rgba(68, 209, 102, 0.12)";
+                    status.style.borderLeft = "3px solid " + (isError ? "#ff7d7d" : "#5ad67d");
+                    status.style.color = isError ? "#ffd6d6" : "#d9ffe4";
+
+                    if (showStatus._timer) {
+                        clearTimeout(showStatus._timer);
                     }
-                }).catch(function (err) {
-                    if (window.Dashboard && typeof Dashboard.hideLoadingMsg === "function") {
-                        Dashboard.hideLoadingMsg();
+                    showStatus._timer = setTimeout(function () {
+                        status.style.display = "none";
+                        status.textContent = "";
+                    }, 3000);
+                }
+
+                function clamp(value, min, max, fallback) {
+                    var parsed = parseInt(value, 10);
+                    if (isNaN(parsed)) {
+                        return fallback;
                     }
-                    if (window.Dashboard && typeof Dashboard.alert === "function") {
-                        Dashboard.alert("Error loading settings: " + (err && err.message ? err.message : err));
+                    return Math.min(max, Math.max(min, parsed));
+                }
+
+                function applyConfigToForm(root, config) {
+                    if (!config) {
+                        config = {};
                     }
-                });
-            }
 
-            function saveConfig(page) {
-                var config;
-                try {
-                    config = readConfigFromForm(page);
-                } catch (err) {
-                    console.error("Hero Banner: failed reading form values", err);
-                    showStatus("Couldn't read the form values. Check console.", "error");
-                    return;
+                    var rotation = field(root, "#RotationSeconds");
+                    var items = field(root, "#ItemsPerLibrary");
+                    var included = field(root, "#IncludedLibraryNames");
+                    var excluded = field(root, "#ExcludedLibraryNames");
+                    var overview = field(root, "#ShowOverview");
+
+                    if (rotation) {
+                        rotation.value = clamp(config.RotationSeconds, 3, 60, 8);
+                    }
+                    if (items) {
+                        items.value = clamp(config.ItemsPerLibrary, 1, 20, 1);
+                    }
+                    if (included) {
+                        included.value = config.IncludedLibraryNames || "";
+                    }
+                    if (excluded) {
+                        excluded.value = config.ExcludedLibraryNames || "";
+                    }
+                    if (overview) {
+                        overview.checked = !!config.ShowOverview;
+                    }
                 }
 
-                if (!window.ApiClient || typeof ApiClient.updatePluginConfiguration !== "function") {
-                    console.error("Hero Banner: ApiClient.updatePluginConfiguration unavailable");
-                    showStatus("Dashboard API isn't ready yet — reload the page and retry.", "error");
-                    return;
+                function readConfigFromForm(root) {
+                    var rotation = field(root, "#RotationSeconds");
+                    var items = field(root, "#ItemsPerLibrary");
+                    var included = field(root, "#IncludedLibraryNames");
+                    var excluded = field(root, "#ExcludedLibraryNames");
+                    var overview = field(root, "#ShowOverview");
+
+                    return {
+                        RotationSeconds: clamp(rotation ? rotation.value : "", 3, 60, 8),
+                        ItemsPerLibrary: clamp(items ? items.value : "", 1, 20, 1),
+                        IncludedLibraryNames: ((included && included.value) || "").trim(),
+                        ExcludedLibraryNames: ((excluded && excluded.value) || "").trim(),
+                        ShowOverview: !!(overview && overview.checked)
+                    };
                 }
 
-                if (window.Dashboard && typeof Dashboard.showLoadingMsg === "function") {
-                    Dashboard.showLoadingMsg();
-                }
+                function loadConfig() {
+                    var root = pageRoot();
+                    if (!root) {
+                        return;
+                    }
 
-                ApiClient.updatePluginConfiguration(pluginId, config)
-                    .then(function (result) {
-                        if (result && result.Success === false) {
-                            throw new Error(result.Error || "Unknown save error");
-                        }
-                        applyConfigToForm(page, config);
-                        if (window.dispatchEvent) {
-                            window.dispatchEvent(new CustomEvent("heroBanner-config-updated", { detail: { config: config } }));
-                        }
-                        if (window.Dashboard && window.Dashboard.processPluginConfigurationUpdateResult) {
-                            Dashboard.processPluginConfigurationUpdateResult(result);
-                        }
-                        showStatus("Settings saved.", "success");
-                    })
-                    .catch(function (err) {
-                        console.error("Hero Banner config save failed", err);
-                        showStatus("Settings could not be saved: " + (err && err.message ? err.message : "unknown error"), "error");
-                    })
-                    .finally(function () {
+                    if (!window.ApiClient || typeof ApiClient.getPluginConfiguration !== "function") {
+                        showStatus("The dashboard API isn't ready yet — reload the page and try again.", "error");
+                        return;
+                    }
+
+                    if (window.Dashboard && typeof Dashboard.showLoadingMsg === "function") {
+                        Dashboard.showLoadingMsg();
+                    }
+
+                    ApiClient.getPluginConfiguration(pluginId).then(function (config) {
+                        applyConfigToForm(pageRoot(), config || {});
+                    }).catch(function (err) {
+                        showStatus("Couldn't load the settings: "
+                            + ((err && err.message) || err || "unknown error"), "error");
+                    }).then(function () {
                         if (window.Dashboard && typeof Dashboard.hideLoadingMsg === "function") {
                             Dashboard.hideLoadingMsg();
                         }
                     });
-            }
+                }
 
-            page.addEventListener("pageshow", function () {
-                loadConfig(this);
-            });
+                function saveConfig() {
+                    var root = pageRoot();
+                    if (!root) {
+                        return;
+                    }
 
-            form.addEventListener("submit", function (e) {
-                e.preventDefault();
-                saveConfig(page);
-                return false;
-            });
-        })();
-    </script>
+                    if (!window.ApiClient || typeof ApiClient.updatePluginConfiguration !== "function") {
+                        showStatus("The dashboard API isn't ready yet — reload the page and try again.", "error");
+                        return;
+                    }
+
+                    var config;
+                    try {
+                        config = readConfigFromForm(root);
+                    } catch (err) {
+                        console.error("Hero Banner: failed reading the settings form", err);
+                        showStatus("Couldn't read the form values. Check the browser console.", "error");
+                        return;
+                    }
+
+                    if (window.Dashboard && typeof Dashboard.showLoadingMsg === "function") {
+                        Dashboard.showLoadingMsg();
+                    }
+
+                    ApiClient.updatePluginConfiguration(pluginId, config).then(function (result) {
+                        if (result && result.Success === false) {
+                            throw new Error(result.Error || "the server rejected the configuration");
+                        }
+
+                        applyConfigToForm(pageRoot(), config);
+
+                        try {
+                            window.dispatchEvent(new CustomEvent("heroBanner-config-updated", { detail: { config: config } }));
+                        } catch (err) {
+                            console.error("Hero Banner: could not announce the configuration change", err);
+                        }
+
+                        showStatus("Settings saved.", "success");
+                    }).catch(function (err) {
+                        console.error("Hero Banner: saving the settings failed", err);
+                        showStatus("Settings could not be saved: "
+                            + ((err && err.message) || "unknown error"), "error");
+                    }).then(function () {
+                        if (window.Dashboard && typeof Dashboard.hideLoadingMsg === "function") {
+                            Dashboard.hideLoadingMsg();
+                        }
+                    });
+                }
+
+                // Fallback for the case where the page is already on screen and the
+                // pageshow event never reaches us - without this the form could stay
+                // empty, which is the failure mode this page used to have.
+                var fallbackLoad;
+
+                // Jellyfin dispatches "pageshow" on the page element when the view
+                // becomes visible; it bubbles, so binding on document survives the
+                // markup being re-inserted. This is the normal path.
+                document.addEventListener("pageshow", function (event) {
+                    var target = event.target;
+                    if (target && target.id === "HeroBannerConfigPage") {
+                        clearTimeout(fallbackLoad);
+                        loadConfig();
+                    }
+                });
+
+                document.addEventListener("submit", function (event) {
+                    var form = event.target;
+                    if (!form || form.id !== "HeroBannerConfigForm") {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    saveConfig();
+                });
+
+                fallbackLoad = setTimeout(loadConfig, 300);
+            })();
+        </script>
+    </div>
 </body>
 </html>
