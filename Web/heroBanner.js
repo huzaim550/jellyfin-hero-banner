@@ -226,6 +226,10 @@
     }
 
     function goTo(i) {
+        if (!state.slides.length) {
+            return;
+        }
+
         state.index = (i + state.slides.length) % state.slides.length;
         render();
         restartTimer();

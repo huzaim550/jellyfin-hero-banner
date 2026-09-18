@@ -61,6 +61,12 @@
     <script type="text/javascript">
         (function () {
             var pluginId = "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f";
+            var page = document.querySelector("#HeroBannerConfigPage");
+            var form = document.querySelector("#HeroBannerConfigForm");
+
+            if (!page || !form) {
+                return;
+            }
 
             function showStatus(message, type) {
                 var status = document.querySelector("#HeroBannerStatus");
@@ -115,64 +121,84 @@
             }
 
             function loadConfig(page) {
-                Dashboard.showLoadingMsg();
+                if (window.Dashboard && typeof Dashboard.showLoadingMsg === "function") {
+                    Dashboard.showLoadingMsg();
+                }
+
+                if (!window.ApiClient || typeof ApiClient.getPluginConfiguration !== "function") {
+                    if (window.Dashboard && typeof Dashboard.alert === "function") {
+                        Dashboard.alert("Error loading settings: Dashboard API isn't ready yet.");
+                    }
+                    return;
+                }
+
                 ApiClient.getPluginConfiguration(pluginId).then(function (config) {
                     applyConfigToForm(page, config || {});
-                    Dashboard.hideLoadingMsg();
+                    if (window.Dashboard && typeof Dashboard.hideLoadingMsg === "function") {
+                        Dashboard.hideLoadingMsg();
+                    }
                 }).catch(function (err) {
-                    Dashboard.hideLoadingMsg();
-                    Dashboard.alert("Error loading settings: " + err);
+                    if (window.Dashboard && typeof Dashboard.hideLoadingMsg === "function") {
+                        Dashboard.hideLoadingMsg();
+                    }
+                    if (window.Dashboard && typeof Dashboard.alert === "function") {
+                        Dashboard.alert("Error loading settings: " + (err && err.message ? err.message : err));
+                    }
                 });
             }
 
             function saveConfig(page) {
-    var config;
-    try {
-        config = readConfigFromForm(page);
-    } catch (err) {
-        console.error("Hero Banner: failed reading form values", err);
-        showStatus("Couldn't read the form values. Check console.", "error");
-        return;
-    }
+                var config;
+                try {
+                    config = readConfigFromForm(page);
+                } catch (err) {
+                    console.error("Hero Banner: failed reading form values", err);
+                    showStatus("Couldn't read the form values. Check console.", "error");
+                    return;
+                }
 
-    if (!window.ApiClient || typeof ApiClient.updatePluginConfiguration !== "function") {
-        console.error("Hero Banner: ApiClient.updatePluginConfiguration unavailable");
-        showStatus("Dashboard API isn't ready yet — reload the page and retry.", "error");
-        return;
-    }
+                if (!window.ApiClient || typeof ApiClient.updatePluginConfiguration !== "function") {
+                    console.error("Hero Banner: ApiClient.updatePluginConfiguration unavailable");
+                    showStatus("Dashboard API isn't ready yet — reload the page and retry.", "error");
+                    return;
+                }
 
-    Dashboard.showLoadingMsg();
+                if (window.Dashboard && typeof Dashboard.showLoadingMsg === "function") {
+                    Dashboard.showLoadingMsg();
+                }
 
-    ApiClient.updatePluginConfiguration(pluginId, config)
-        .then(function (result) {
-            if (result && result.Success === false) {
-                throw new Error(result.Error || "Unknown save error");
+                ApiClient.updatePluginConfiguration(pluginId, config)
+                    .then(function (result) {
+                        if (result && result.Success === false) {
+                            throw new Error(result.Error || "Unknown save error");
+                        }
+                        applyConfigToForm(page, config);
+                        if (window.dispatchEvent) {
+                            window.dispatchEvent(new CustomEvent("heroBanner-config-updated", { detail: { config: config } }));
+                        }
+                        if (window.Dashboard && window.Dashboard.processPluginConfigurationUpdateResult) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        }
+                        showStatus("Settings saved.", "success");
+                    })
+                    .catch(function (err) {
+                        console.error("Hero Banner config save failed", err);
+                        showStatus("Settings could not be saved: " + (err && err.message ? err.message : "unknown error"), "error");
+                    })
+                    .finally(function () {
+                        if (window.Dashboard && typeof Dashboard.hideLoadingMsg === "function") {
+                            Dashboard.hideLoadingMsg();
+                        }
+                    });
             }
-            applyConfigToForm(page, config);
-            if (window.dispatchEvent) {
-                window.dispatchEvent(new CustomEvent("heroBanner-config-updated", { detail: { config: config } }));
-            }
-            if (Dashboard && Dashboard.processPluginConfigurationUpdateResult) {
-                Dashboard.processPluginConfigurationUpdateResult(result);
-            }
-            showStatus("Settings saved.", "success");
-        })
-        .catch(function (err) {
-            console.error("Hero Banner config save failed", err);
-            showStatus("Settings could not be saved: " + (err && err.message ? err.message : "unknown error"), "error");
-        })
-        .finally(function () {
-            Dashboard.hideLoadingMsg();
-        });
-}
 
-            document.querySelector("#HeroBannerConfigPage").addEventListener("pageshow", function () {
+            page.addEventListener("pageshow", function () {
                 loadConfig(this);
             });
 
-            document.querySelector("#HeroBannerConfigForm").addEventListener("submit", function (e) {
+            form.addEventListener("submit", function (e) {
                 e.preventDefault();
-                saveConfig(document.querySelector("#HeroBannerConfigPage"));
+                saveConfig(page);
                 return false;
             });
         })();
