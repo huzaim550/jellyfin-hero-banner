@@ -53,6 +53,7 @@
                             <span>Save</span>
                         </button>
                     </div>
+                    <div id="HeroBannerStatus" role="status" aria-live="polite" style="display:none; margin-top:12px; padding:8px 10px; border-radius:4px; font-size:0.95em;"></div>
                 </form>
             </div>
         </div>
@@ -60,6 +61,28 @@
     <script type="text/javascript">
         (function () {
             var pluginId = "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f";
+
+            function showStatus(message, type) {
+                var status = document.querySelector("#HeroBannerStatus");
+                if (!status) {
+                    return;
+                }
+
+                var isError = type === "error";
+                status.textContent = message || "";
+                status.style.display = "block";
+                status.style.background = isError ? "rgba(255, 100, 100, 0.12)" : "rgba(68, 209, 102, 0.12)";
+                status.style.borderLeft = "3px solid " + (isError ? "#ff7d7d" : "#5ad67d");
+                status.style.color = isError ? "#ffd6d6" : "#d9ffe4";
+
+                if (showStatus._timer) {
+                    clearTimeout(showStatus._timer);
+                }
+                showStatus._timer = setTimeout(function () {
+                    status.style.display = "none";
+                    status.textContent = "";
+                }, 2800);
+            }
 
             function clamp(value, min, max, fallback) {
                 var parsed = parseInt(value, 10);
