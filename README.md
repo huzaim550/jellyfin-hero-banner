@@ -1,99 +1,274 @@
 # Hero Banner for Jellyfin
 
-Adds a rotating hero banner to the top of the Jellyfin home screen, showing the
-most recently added item from each of your libraries — backdrop image, title,
-year/rating/runtime/genres, overview, and Play / More info buttons.
+Adds a rotating hero banner to the top of the Jellyfin home screen, showing recently added content from your libraries with:
 
-Artwork cross-fades between titles with a slow push-in, the library name sits in
-a badge, and the slide indicators fill up over the rotation interval so you can
-see how long is left. Items with no artwork of their own get a tinted gradient
-rather than a black rectangle, and the layout adapts to narrow screens and
-honours `prefers-reduced-motion`.
+* Backdrop artwork
+* Title, year, rating, runtime, and genres
+* Overview/plot summary
+* **Play** and **More Info** buttons
+* Library name badge
+* Smooth artwork cross-fades and slow zoom animation
+* Slide indicators showing the rotation progress
+* A tinted fallback background when artwork isn't available
+* Responsive layout for phones, tablets, and desktop
+* Support for `prefers-reduced-motion`
 
-## How it works
+---
 
-Jellyfin's server-side plugin system doesn't have an official hook for adding
-widgets to the home screen — that lives in the web client, which plugins don't
-directly control. So this plugin:
+# 🚀 Install in Jellyfin — No Coding Required
 
-1. On server startup, patches the web client's `index.html` to load one extra
-   `<script>` and `<link>` tag (between HTML comment markers, so it's easy to
-   find and undo).
-2. Serves that script/stylesheet itself from `/HeroBanner/heroBanner.js` and
-   `/HeroBanner/heroBanner.css`.
-3. The script waits for the page's existing `ApiClient` (already logged in),
-   fetches the latest item per library, and renders the banner into the home
-   page.
+The easiest way to install Hero Banner is through Jellyfin's **Plugin Repository** system.
 
-Because it edits `index.html` on disk, the injection re-applies itself on
-every server start — which also means it survives Jellyfin server *updates*
-(which overwrite `index.html`), since it's re-run each restart.
+You don't need to compile anything, install .NET, or manually copy DLL files.
 
-**Heads up:** the exact home-page DOM structure isn't a documented, stable
-API and can differ between Jellyfin versions/skins. `Web/heroBanner.js` looks
-for the home page's own tab container (see `findHomeTab()`); if the banner
-doesn't show up on your version, open your browser's dev tools on the Jellyfin
-home page, find the container that wraps the home sections, and update that
+### 1. Copy the repository URL
+
+Copy this URL:
+
+```text
+https://raw.githubusercontent.com/huzaim550/jellyfin-hero-banner/main/manifest.json
+```
+
+### 2. Open Jellyfin Dashboard
+
+In Jellyfin, go to:
+
+**Dashboard → Plugins → Repositories**
+
+Then click **Add Repository**.
+
+### 3. Paste the URL
+
+Paste the repository URL into the repository field:
+
+```text
+https://raw.githubusercontent.com/huzaim550/jellyfin-hero-banner/main/manifest.json
+```
+
+Give it any name you like, for example:
+
+```text
+Hero Banner
+```
+
+Click **Save**.
+
+### 4. Install Hero Banner
+
+Now go to:
+
+**Dashboard → Plugins → Catalog**
+
+Find:
+
+**Hero Banner**
+
+Open it and click **Install**.
+
+### 5. Restart Jellyfin
+
+Restart your Jellyfin server when prompted.
+
+That's it.
+
+After Jellyfin starts again, open the **Home** page and the Hero Banner should appear above your library sections.
+
+> **Tip:** If you already had Jellyfin open in your browser, do a hard refresh with **Ctrl + Shift + R** (Windows/Linux) or **Cmd + Shift + R** (macOS).
+
+---
+
+# ⚙️ Configure Hero Banner
+
+After installation, go to:
+
+**Dashboard → Plugins → Hero Banner**
+
+You can configure:
+
+| Setting                          | Description                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------- |
+| **Rotation interval**            | How many seconds each title stays on screen. Supports 3–60 seconds.          |
+| **How many titles will slide**   | Number of recently added items to retrieve from each library. Supports 1–20. |
+| **Only include these libraries** | Optional comma-separated list of libraries to include.                       |
+| **Exclude these libraries**      | Libraries that should always be excluded. Exclusions take priority.          |
+| **Show the overview text**       | Controls whether the plot/overview is displayed.                             |
+
+Library names are matched case-insensitively and surrounding spaces are ignored.
+
+For example:
+
+```text
+Movies
+ movies
+MOVIES
+```
+
+are all treated as the same library.
+
+If there are no matching libraries or no suitable items are found, the banner removes itself instead of leaving an empty space above your libraries.
+
+---
+
+# 🎨 How It Works
+
+Hero Banner runs inside Jellyfin's existing web client.
+
+Jellyfin's server-side plugin system doesn't provide an official API for inserting custom widgets directly into the Home screen. Therefore, Hero Banner uses a small web-client injection mechanism.
+
+When the Jellyfin server starts, the plugin:
+
+1. Locates Jellyfin's `index.html`.
+2. Adds a `<script>` and `<link>` tag between identifiable HTML comment markers.
+3. Serves the JavaScript and CSS from the Jellyfin server itself.
+4. The JavaScript waits for Jellyfin's existing authenticated `ApiClient`.
+5. It retrieves the configured libraries and their recently added items.
+6. It creates the hero banner inside the Home page.
+
+The injected resources are:
+
+```text
+/HeroBanner/heroBanner.js
+/HeroBanner/heroBanner.css
+```
+
+The settings endpoint is:
+
+```text
+/HeroBanner/Settings
+```
+
+The settings endpoint only serves signed-in users, and the web client accesses it through Jellyfin's existing `ApiClient`, so the authentication token is included automatically.
+
+---
+
+# 🔄 Jellyfin Updates
+
+The plugin automatically attempts to apply its injection again whenever Jellyfin starts.
+
+This is important because Jellyfin updates can replace the web client's `index.html`.
+
+After an update:
+
+```text
+Jellyfin update
+      ↓
+index.html replaced
+      ↓
+Jellyfin starts
+      ↓
+Hero Banner detects the new index.html
+      ↓
+Injection is applied again
+      ↓
+Hero Banner works again
+```
+
+You may still need to hard-refresh your browser after a Jellyfin update so that the browser loads the latest web-client files.
+
+---
+
+# 🛠️ If Hero Banner Doesn't Appear
+
+The Jellyfin Home page's internal HTML structure is not a documented, stable plugin API.
+
+Different Jellyfin versions or custom skins can change the DOM structure.
+
+The client script therefore searches for the Home page's tab/container using:
+
+```text
+Web/heroBanner.js
+```
+
+specifically the:
+
+```text
+findHomeTab()
+```
+
 function.
 
-## Settings
+If the plugin loads successfully but the banner doesn't appear:
 
-Dashboard → Plugins → Hero Banner:
+1. Open Jellyfin in your browser.
+2. Open your browser's Developer Tools.
+3. Inspect the Home page.
+4. Find the container that contains the Home page's library sections.
+5. Compare it with what `findHomeTab()` is searching for.
+6. Update the function if your Jellyfin version uses a different structure.
 
-| Setting | What it does |
-| --- | --- |
-| Rotation interval | Seconds each title stays on screen before rotating (3–60). |
-| How many titles will slide | Most recently added items to pull per library (1–20). |
-| Only include these libraries | Comma-separated allow-list of library names. Blank means every library. |
-| Exclude these libraries | Comma-separated list of library names to always leave out. Exclusions win over inclusions. |
-| Show the overview text | Whether the plot summary appears on the banner. |
+---
 
-Library names are matched case-insensitively, and surrounding spaces are
-ignored, so `Movies` and ` movies ` are the same library. If the include list
-matches nothing (or every library is empty), the banner takes itself out of the
-layout rather than leaving an empty box above your libraries.
+# 🔧 Manual Injection
 
-The banner is scoped to the Home tab, so it doesn't follow you to Favorites or
-any other page. It reads its settings when it loads, so a browser that is
-already open picks changes up the next time the page loads.
+Normally this isn't necessary.
 
-The settings endpoint (`/HeroBanner/Settings`) only serves signed-in users; the
-banner reads it through the web client's `ApiClient` so the access token is
-sent along.
+If Jellyfin's `index.html` is read-only and the plugin cannot modify it automatically, you can manually add the following immediately before `</head>`:
 
-## Easiest path: let GitHub build it, add it as a repository (no coding needed)
+```html
+<link rel="stylesheet" href="/HeroBanner/heroBanner.css">
+<script defer src="/HeroBanner/heroBanner.js"></script>
+```
 
-This project includes `.github/workflows/build.yml`, which makes GitHub
-compile the plugin for you and publish it as a proper Jellyfin repository you
-can add from Dashboard → Plugins → Repositories, same as any community plugin.
+The plugin will then be able to serve the required files while the Jellyfin web client loads them.
 
-1. Create a free GitHub account if you don't have one (github.com).
-2. Create a new **public** repository (e.g. `jellyfin-hero-banner`).
-3. Extract this zip on your computer, then on your new repo's page use
-   **Add file → Upload files** and drag in everything from the extracted
-   `JellyfinHeroBanner` folder (including the hidden `.github` folder — if
-   your OS hides it, unhide hidden files first, or drag the whole folder at
-   once rather than picking files individually).
-4. Go to **Settings → Actions → General → Workflow permissions**, choose
-   **Read and write permissions**, and save. (This lets the automated build
-   publish a release for you.)
-5. Open the **Actions** tab — a build should already be running from your
-   upload. Wait for the green checkmark (~1-2 minutes).
-6. Once it's done, your manifest will be live at:
-   `https://raw.githubusercontent.com/huzaim550/jellyfin-hero-banner/main/manifest.json`
-7. In Jellyfin: **Dashboard → Plugins → Repositories → Add Repository**,
-   paste that URL, save.
-8. Go to **Dashboard → Plugins → Catalog**, find **Hero Banner** under
-   General, click **Install**, then restart Jellyfin.
+---
 
-From then on, bumping `<AssemblyVersion>` in the `.csproj` and pushing again
-publishes a new version automatically — Jellyfin will offer it as an update
-through the same repository.
+# 🗑️ Uninstall
 
-## Build it yourself instead
+Remove **Hero Banner** from:
 
-If you'd rather build locally: you'll need the .NET 8 SDK and internet access
-to NuGet (this project pulls `Jellyfin.Controller` / `Jellyfin.Model`).
+**Dashboard → Plugins**
+
+The plugin will attempt to remove its injected JavaScript and CSS references from `index.html`.
+
+If Jellyfin's files are read-only and the plugin cannot clean them up automatically, remove these two lines manually:
+
+```html
+<link rel="stylesheet" href="/HeroBanner/heroBanner.css">
+<script defer src="/HeroBanner/heroBanner.js"></script>
+```
+
+---
+
+# 👨‍💻 Developer / Manual Installation
+
+The following section is only necessary if you want to build or modify the plugin yourself.
+
+## Requirements
+
+You'll need:
+
+* .NET 8 SDK
+* Internet access to NuGet
+* A Jellyfin server version compatible with the package versions used by the project
+
+Before building, open:
+
+```text
+Jellyfin.Plugin.HeroBanner.csproj
+```
+
+and make sure the `Jellyfin.Controller` and `Jellyfin.Model` package versions match your Jellyfin **server** version.
+
+You can find your Jellyfin server version under:
+
+**Dashboard → About**
+
+If you're creating a repository package, also make sure `targetAbi` in:
+
+```text
+build.yaml
+```
+
+matches the target Jellyfin version.
+
+Version mismatches are one of the most common reasons a Jellyfin plugin fails to load.
+
+---
+
+# 🏗️ Build Locally
+
+From the project directory:
 
 ```bash
 cd JellyfinHeroBanner
@@ -101,58 +276,208 @@ dotnet restore
 dotnet publish -c Release -o out
 ```
 
-**Before building**, open `Jellyfin.Plugin.HeroBanner.csproj` and set the
-`Jellyfin.Controller` / `Jellyfin.Model` package versions to match your
-Jellyfin *server* version (Dashboard → About). Also update `targetAbi` in
-`build.yaml` to match if you're packaging for a repository. Mismatched
-versions are the most common reason a plugin fails to load.
+The compiled plugin will be placed in:
 
-## Install
-
-1. On your Jellyfin server, find the plugins folder — usually:
-   - Docker: the path you mounted to `/config`, under `plugins/`
-   - Linux: `/var/lib/jellyfin/plugins/`
-   - Windows: `%ProgramData%\Jellyfin\Server\plugins\`
-2. Create a folder there, e.g. `plugins/HeroBanner_1.0.13.0/`. The name is up to
-   you, but keeping the version in it (matching `<AssemblyVersion>`) makes it
-   obvious which build is installed.
-3. Copy `out/Jellyfin.Plugin.HeroBanner.dll` into it.
-4. Restart Jellyfin.
-5. Check **Dashboard → Plugins** — "Hero Banner" should be listed. Open it to
-   configure rotation speed, items per library, and library include/exclude
-   lists.
-6. Hard-refresh the Jellyfin web app (Ctrl/Cmd+Shift+R) so the browser picks
-   up the patched `index.html`.
-
-## Manual injection (if auto-patching fails)
-
-If `index.html` is read-only, or the plugin logs a warning that it couldn't
-patch it, add these two lines yourself just before `</head>` in your web
-client's `index.html`:
-
-```html
-<link rel="stylesheet" href="/HeroBanner/heroBanner.css">
-<script defer src="/HeroBanner/heroBanner.js"></script>
+```text
+out/
 ```
 
-## Uninstall
+with the main assembly:
 
-Remove the plugin from Dashboard → Plugins. It will attempt to strip the
-injected lines from `index.html` automatically; if it can't (e.g. permissions),
-remove the two lines above by hand.
-
-## Project layout
-
+```text
+Jellyfin.Plugin.HeroBanner.dll
 ```
-Jellyfin.Plugin.HeroBanner.csproj   Project file (NuGet package refs)
-Plugin.cs                           Plugin entry point / metadata
-WebClientInjector.cs                Patches index.html on startup
-HeroBannerController.cs             Serves the injected JS/CSS + settings
+
+---
+
+# 📦 Manual Plugin Installation
+
+Find your Jellyfin plugins directory.
+
+Common locations include:
+
+### Docker
+
+The directory mounted to:
+
+```text
+/config
+```
+
+and then:
+
+```text
+/config/plugins/
+```
+
+### Linux
+
+```text
+/var/lib/jellyfin/plugins/
+```
+
+### Windows
+
+```text
+%ProgramData%\Jellyfin\Server\plugins\
+```
+
+Create a directory such as:
+
+```text
+plugins/HeroBanner_1.0.13.0/
+```
+
+Copy:
+
+```text
+Jellyfin.Plugin.HeroBanner.dll
+```
+
+into that directory.
+
+Restart Jellyfin and check:
+
+**Dashboard → Plugins**
+
+Hero Banner should now be listed.
+
+---
+
+# 📁 Project Structure
+
+```text
+Jellyfin.Plugin.HeroBanner.csproj
+Plugin.cs
+WebClientInjector.cs
+HeroBannerController.cs
+
 Configuration/
-  PluginConfiguration.cs            Settings model
-  configPage.html                   Dashboard settings page
+  PluginConfiguration.cs
+  configPage.html
+
 Web/
-  heroBanner.js                     Injected client script (builds the banner)
-  heroBanner.css                    Injected stylesheet
-build.yaml                          Manifest for jprm / a plugin repository
+  heroBanner.js
+  heroBanner.css
+
+build.yaml
+.github/
+  workflows/
+    build.yml
 ```
+
+### Main components
+
+**`Plugin.cs`**
+Plugin entry point, metadata, and configuration handling.
+
+**`WebClientInjector.cs`**
+Finds Jellyfin's web client's `index.html` and adds the Hero Banner resources.
+
+**`HeroBannerController.cs`**
+Serves the JavaScript, CSS, and settings endpoint.
+
+**`Web/heroBanner.js`**
+Runs inside the Jellyfin web client and creates the banner.
+
+**`Web/heroBanner.css`**
+Controls the banner's layout, animations, responsive behavior, and visual styling.
+
+**`Configuration/PluginConfiguration.cs`**
+Stores the plugin's configuration.
+
+**`Configuration/configPage.html`**
+Provides the Jellyfin Dashboard configuration interface.
+
+**`build.yaml`**
+Defines the information required to package the plugin for a Jellyfin plugin repository.
+
+**`.github/workflows/build.yml`**
+Automatically builds and publishes the plugin through GitHub Actions.
+
+---
+
+# 🤖 Automatic GitHub Builds
+
+The repository includes a GitHub Actions workflow:
+
+```text
+.github/workflows/build.yml
+```
+
+This allows GitHub to build and publish the plugin automatically.
+
+For developers maintaining their own copy:
+
+1. Create a public GitHub repository.
+2. Upload the project files.
+3. Enable **Read and write permissions** for GitHub Actions under:
+   **Settings → Actions → General → Workflow permissions**
+4. Push your changes.
+5. GitHub Actions builds the plugin automatically.
+6. The repository manifest can then be used by Jellyfin's Plugin Repository system.
+
+When releasing a new version, update:
+
+```xml
+<AssemblyVersion>...</AssemblyVersion>
+```
+
+in:
+
+```text
+Jellyfin.Plugin.HeroBanner.csproj
+```
+
+and push the changes.
+
+---
+
+# 📌 Repository
+
+The official repository for this project is:
+
+[GitHub — jellyfin-hero-banner](https://github.com/huzaim550/jellyfin-hero-banner?utm_source=chatgpt.com)
+
+### Jellyfin Repository Manifest
+
+For the easiest installation, add this manifest to Jellyfin:
+
+```text
+https://raw.githubusercontent.com/huzaim550/jellyfin-hero-banner/main/manifest.json
+```
+
+Once added, Jellyfin handles downloading and installing the plugin through its normal Plugin Catalog.
+
+---
+
+# ⚡ Quick Start
+
+If you just want the banner running, **you only need these steps**:
+
+```text
+1. Copy the manifest URL
+        ↓
+2. Jellyfin Dashboard
+        ↓
+3. Plugins → Repositories
+        ↓
+4. Add Repository
+        ↓
+5. Paste manifest.json URL
+        ↓
+6. Save
+        ↓
+7. Plugins → Catalog
+        ↓
+8. Install "Hero Banner"
+        ↓
+9. Restart Jellyfin
+        ↓
+10. Open Home
+```
+
+**No coding. No compiling. No DLL copying.**
+
+For developers who want to modify or build the plugin themselves, see the **Developer / Manual Installation** section above.
+
