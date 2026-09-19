@@ -1,4 +1,4 @@
-# Hero Banner for Jellyfin
+# Hero Banner for Jellyfin (Stable)
 
 Adds a rotating hero banner to the top of the Jellyfin home screen, showing recently added content from your libraries with:
 
