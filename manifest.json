@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "1.0.14.0",
+        "changelog": "Restyle the banner away from the generic look. The violet accent colour and the library-name badge above the title are gone, so the artwork is the only colour on screen. The title is set in Inter Tight at 600 instead of an 800-weight system font, the year/rating/runtime line is now small letterspaced credits (runtime reads 2h 9m rather than 129 min), and the buttons lose the pill shape, the blur and the glow. The corner radius drops from 20px to 12px and the text shadows are removed in favour of a scrim that carries legibility on its own. Inter and Inter Tight now ship inside the plugin and are served from /HeroBanner/fonts/, so the banner keeps its typography on a server with no internet access.",
+        "targetAbi": "10.9.11.0",
+        "sourceUrl": "https://github.com/huzaim550/jellyfin-hero-banner/releases/download/v1.0.14.0/herobanner_1.0.14.0.zip",
+        "checksum": "5f96821477f677f12c46077fc12fc37d",
+        "timestamp": "2026-09-23T14:05:14Z"
+      },
+      {
         "version": "1.0.13.0",
         "changelog": "Refresh the banner visually - artwork now cross-fades with a slow push-in, the library name sits in a badge, a year/rating/runtime/genre line appears under the title, the buttons carry icons, and the slide indicators fill up over the rotation interval. Adds narrow-screen and reduced-motion handling.",
         "targetAbi": "10.9.11.0",
