@@ -8,12 +8,24 @@
     // browser dev tools and update that function.
 
     var CONFIG = {
+        contentSource: "Latest",
         rotationSeconds: 8,
         itemsPerLibrary: 1,
         includedLibraryNames: "",
         excludedLibraryNames: "",
         showOverview: true
     };
+
+    // Kept in step with PluginConfiguration.ContentSources on the server. The
+    // server normalises too; this is the second line of defence, for a browser
+    // holding a cached script across a plugin rollback.
+    var CONTENT_SOURCES = ["Latest", "ContinueWatching", "NextUp", "Random"];
+
+    // The fields the banner renders. PlaybackPositionTicks is not listed
+    // because it arrives inside UserData, which the API always returns - it is
+    // what draws the resume bar.
+    var ITEM_FIELDS = "Overview,ProductionYear,OfficialRating,RunTimeTicks,Genres";
+    var IMAGE_TYPES = "Backdrop,Primary,Thumb";
 
     // Inline icons so the buttons don't depend on an icon font being present.
     // The play mark is solid, the info mark is drawn as a stroke - see
@@ -45,6 +57,10 @@
         CONFIG.rotationSeconds = Math.min(60, Math.max(3, parseInt(CONFIG.rotationSeconds, 10) || 8));
         CONFIG.itemsPerLibrary = Math.min(20, Math.max(1, parseInt(CONFIG.itemsPerLibrary, 10) || 1));
         CONFIG.showOverview = !!CONFIG.showOverview;
+
+        if (CONTENT_SOURCES.indexOf(CONFIG.contentSource) === -1) {
+            CONFIG.contentSource = "Latest";
+        }
     }
 
     function log() {
@@ -110,49 +126,143 @@
             .filter(Boolean);
     }
 
-    function getLatestPerLibrary() {
+    function flatten(lists) {
+        return lists.reduce(function (acc, list) {
+            return acc.concat(list);
+        }, []);
+    }
+
+    // The user's libraries, after the include/exclude filters. Only the
+    // per-library sources need this - see the two per-user sources below.
+    function filteredViews() {
         var userId = ApiClient.getCurrentUserId();
         var included = splitNames(CONFIG.includedLibraryNames);
         var excluded = splitNames(CONFIG.excludedLibraryNames);
 
         return ApiClient.getUserViews({}, userId).then(function (result) {
-            var views = (result.Items || []).filter(function (v) {
-                var name = (v.Name || "").toLowerCase();
+            return (result.Items || []).filter(function (view) {
+                var name = (view.Name || "").toLowerCase();
                 if (included.length > 0 && included.indexOf(name) === -1) {
                     return false;
                 }
 
-                if (excluded.indexOf(name) !== -1) {
-                    return false;
-                }
+                return excluded.indexOf(name) === -1;
+            });
+        });
+    }
 
-                return true;
+    // A failed library hides itself rather than taking the whole banner down
+    // with it - one unreachable library should not cost you the other four.
+    function ignoreFailure() {
+        return function () {
+            return [];
+        };
+    }
+
+    // Runs one query per library and flattens the results. `path` is the
+    // endpoint and `extra` whatever query parameters it needs; the shared
+    // paging, field and image parameters are added here so every source asks
+    // for the same shape of item.
+    function perLibrary(views, path, extra) {
+        var userId = ApiClient.getCurrentUserId();
+
+        var requests = views.map(function (view) {
+            var params = {
+                ParentId: view.Id,
+                Limit: CONFIG.itemsPerLibrary,
+                Fields: ITEM_FIELDS,
+                ImageTypeLimit: 1,
+                EnableImageTypes: IMAGE_TYPES
+            };
+
+            Object.keys(extra || {}).forEach(function (key) {
+                params[key] = extra[key];
             });
 
-            var requests = views.map(function (view) {
-                var url = ApiClient.getUrl("Users/" + userId + "/Items/Latest", {
-                    ParentId: view.Id,
-                    Limit: CONFIG.itemsPerLibrary,
-                    // The extra fields feed the meta line under the title.
-                    Fields: "Overview,ProductionYear,OfficialRating,RunTimeTicks,Genres",
-                    ImageTypeLimit: 1,
-                    EnableImageTypes: "Backdrop,Primary,Thumb"
-                });
+            return ApiClient.getJSON(ApiClient.getUrl(path, params))
+                .then(function (result) {
+                    // Items/Latest answers with a bare array; the paged
+                    // endpoints wrap theirs in an Items property.
+                    return (result && result.Items) || result || [];
+                })
+                .catch(ignoreFailure());
+        });
 
-                return ApiClient.getJSON(url)
-                    .then(function (items) {
-                        return items || [];
-                    })
-                    .catch(function () {
-                        return [];
-                    });
-            });
+        return Promise.all(requests).then(flatten);
+    }
 
-            return Promise.all(requests).then(function (lists) {
-                return lists.reduce(function (acc, l) {
-                    return acc.concat(l);
-                }, []);
-            });
+    // Most recently added item from each library.
+    function fetchLatest(views) {
+        return perLibrary(views, "Users/" + ApiClient.getCurrentUserId() + "/Items/Latest");
+    }
+
+    // A random pick from each library. Jellyfin reshuffles this per request,
+    // so the banner differs on every home page load.
+    function fetchRandom(views) {
+        return perLibrary(views, "Users/" + ApiClient.getCurrentUserId() + "/Items", {
+            SortBy: "Random",
+            Recursive: true,
+            // Without this the sample can land on a folder or a box set,
+            // neither of which has anything to show in a hero banner.
+            IncludeItemTypes: "Movie,Series,Episode,Video,MusicVideo"
+        });
+    }
+
+    // What this user has started but not finished. This is a per-user list,
+    // not a per-library one, so the library filters deliberately do not apply.
+    function fetchContinueWatching() {
+        if (typeof ApiClient.getResumeItems !== "function") {
+            log("This web client has no resume endpoint - falling back to the latest additions.");
+            return Promise.resolve([]);
+        }
+
+        return ApiClient.getResumeItems({
+            Limit: CONFIG.itemsPerLibrary,
+            MediaTypes: "Video",
+            Fields: ITEM_FIELDS,
+            ImageTypeLimit: 1,
+            EnableImageTypes: IMAGE_TYPES
+        }, ApiClient.getCurrentUserId())
+            .then(function (result) {
+                return (result && result.Items) || [];
+            })
+            .catch(ignoreFailure());
+    }
+
+    // The next unwatched episode of each series this user is partway through.
+    function fetchNextUp() {
+        if (typeof ApiClient.getNextUpEpisodes !== "function") {
+            log("This web client has no next-up endpoint - falling back to the latest additions.");
+            return Promise.resolve([]);
+        }
+
+        return ApiClient.getNextUpEpisodes({
+            UserId: ApiClient.getCurrentUserId(),
+            Limit: CONFIG.itemsPerLibrary,
+            Fields: ITEM_FIELDS,
+            ImageTypeLimit: 1,
+            EnableImageTypes: IMAGE_TYPES
+        })
+            .then(function (result) {
+                return (result && result.Items) || [];
+            })
+            .catch(ignoreFailure());
+    }
+
+    function getItems() {
+        var source = CONFIG.contentSource;
+
+        if (source === "ContinueWatching") {
+            return fetchContinueWatching();
+        }
+
+        if (source === "NextUp") {
+            return fetchNextUp();
+        }
+
+        // The two per-library sources both need the library list first.
+        return filteredViews().then(function (views) {
+            return source === "Random" ? fetchRandom(views) : fetchLatest(views);
         });
     }
 
@@ -212,7 +322,8 @@
                     '</button>' +
                 '</div>' +
             '</div>' +
-            '<div class="heroBannerPlugin-dots"></div>';
+            '<div class="heroBannerPlugin-dots"></div>' +
+            '<div class="heroBannerPlugin-progress" aria-hidden="true" hidden><i></i></div>';
         return el;
     }
 
@@ -347,6 +458,28 @@
         metaEl.style.display = "";
     }
 
+    // A part-watched item gets a progress bar along the bottom edge and a
+    // "Resume" label on the primary button, the way a streaming service marks
+    // something you are in the middle of. Everything else shows a plain Play
+    // and no bar at all.
+    function renderProgress(item) {
+        var bar = state.el.querySelector(".heroBannerPlugin-progress");
+        var play = state.el.querySelector(".heroBannerPlugin-play");
+        var userData = item.UserData || {};
+        var position = userData.PlaybackPositionTicks || 0;
+        var runtime = item.RunTimeTicks || 0;
+        var resumed = position > 0 && runtime > 0;
+
+        if (resumed) {
+            var percent = Math.min(100, Math.max(0, (position / runtime) * 100));
+            bar.querySelector("i").style.width = percent.toFixed(2) + "%";
+        }
+
+        bar.hidden = !resumed;
+        play.querySelector("span").textContent = resumed ? "Resume" : "Play";
+        play.setAttribute("aria-label", (resumed ? "Resume " : "Play ") + (item.Name || ""));
+    }
+
     // The active pill fills over the rotation interval, so the banner shows how
     // long is left on the current title.
     function renderDots() {
@@ -415,6 +548,7 @@
             overviewEl.style.display = "none";
         }
 
+        renderProgress(item);
         renderDots();
 
         state.el.querySelector(".heroBannerPlugin-play").onclick = function () {
@@ -493,7 +627,7 @@
         // just like the item lookup below.
         waitForApiClient(function () {
             fetchConfig().then(function () {
-                getLatestPerLibrary()
+                getItems()
                     .then(function (items) {
                         state.slides = items;
                         state.index = 0;
@@ -501,7 +635,9 @@
                         state.loading = false;
 
                         if (!items.length) {
-                            log("No items found across your libraries - nothing to show.");
+                            log("The \"" + CONFIG.contentSource + "\" source returned nothing - nothing to show.");
+                        } else {
+                            log("Showing " + items.length + " item(s) from the \"" + CONFIG.contentSource + "\" source.");
                         }
 
                         if (state.el) {

@@ -110,6 +110,7 @@ namespace Jellyfin.Plugin.HeroBanner
 
             return Ok(new
             {
+                contentSource = PluginConfiguration.NormalizeContentSource(config.ContentSource),
                 rotationSeconds = config.RotationSeconds,
                 itemsPerLibrary = config.ItemsPerLibrary,
                 includedLibraryNames = config.IncludedLibraryNames,

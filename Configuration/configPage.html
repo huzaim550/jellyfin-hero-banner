@@ -5,18 +5,34 @@
 </head>
 <body>
     <div id="HeroBannerConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
-         data-require="emby-input,emby-button,emby-checkbox">
+         data-require="emby-input,emby-button,emby-checkbox,emby-select">
         <div data-role="content">
             <div class="content-primary">
                 <form id="HeroBannerConfigForm">
                     <div class="verticalSection">
                         <h2>Hero Banner</h2>
                         <p>
-                            Adds a rotating hero banner of the latest additions per library to the
-                            home screen. The banner reads its settings when it loads, so a browser
-                            that is already open picks the changes up the next time it loads or
-                            refreshes Jellyfin.
+                            Adds a rotating hero banner to the home screen. The banner reads its
+                            settings when it loads, so a browser that is already open picks the
+                            changes up the next time it loads or refreshes Jellyfin.
                         </p>
+                    </div>
+
+                    <div class="selectContainer">
+                        <label class="selectLabel selectLabelUnfocused" for="ContentSource">What the banner shows</label>
+                        <select is="emby-select" id="ContentSource" name="ContentSource">
+                            <option value="Latest">Recently added</option>
+                            <option value="ContinueWatching">Continue watching</option>
+                            <option value="NextUp">Next up</option>
+                            <option value="Random">Random pick</option>
+                        </select>
+                        <div class="fieldDescription">
+                            <strong>Recently added</strong> shows the newest item in each library.
+                            <strong>Continue watching</strong> and <strong>Next up</strong> follow the
+                            person looking at the screen, so they show different titles for each user
+                            &mdash; and the library filters below do not apply to them, because they
+                            are drawn from your watch history rather than from a library.
+                        </div>
                     </div>
 
                     <div class="inputContainer">
@@ -28,7 +44,12 @@
                     <div class="inputContainer">
                         <label class="inputLabel inputLabelUnfocused" for="ItemsPerLibrary">How many titles will slide</label>
                         <input is="emby-input" type="number" min="1" max="20" id="ItemsPerLibrary" name="ItemsPerLibrary" />
-                        <div class="fieldDescription">Number of most recently added items to display (1-20 per library).</div>
+                        <div class="fieldDescription">
+                            How many titles the banner rotates through (1-20). Recently added and
+                            Random pick take this many from <em>each</em> library; Continue watching
+                            and Next up use it as a total across all of them. Set it to 1 and the
+                            banner shows a single title with no rotation.
+                        </div>
                     </div>
 
                     <div class="inputContainer">
@@ -124,17 +145,32 @@
                     return Math.min(max, Math.max(min, parsed));
                 }
 
+                // Kept in step with PluginConfiguration.ContentSources on the
+                // server, so a value written by a newer plugin cannot leave the
+                // dropdown showing nothing.
+                var CONTENT_SOURCES = ["Latest", "ContinueWatching", "NextUp", "Random"];
+
                 function applyConfigToForm(root, config) {
                     if (!config) {
                         config = {};
                     }
 
+                    var source = field(root, "#ContentSource");
                     var rotation = field(root, "#RotationSeconds");
                     var items = field(root, "#ItemsPerLibrary");
                     var included = field(root, "#IncludedLibraryNames");
                     var excluded = field(root, "#ExcludedLibraryNames");
                     var overview = field(root, "#ShowOverview");
 
+                    if (source) {
+                        source.value = CONTENT_SOURCES.indexOf(config.ContentSource) === -1
+                            ? "Latest"
+                            : config.ContentSource;
+                        // emby-select paints its own label from the selected
+                        // option, and only repaints on a change event, so a
+                        // programmatic value alone would leave a stale label.
+                        source.dispatchEvent(new Event("change", { bubbles: true }));
+                    }
                     if (rotation) {
                         rotation.value = clamp(config.RotationSeconds, 3, 60, 8);
                     }
@@ -153,13 +189,17 @@
                 }
 
                 function readConfigFromForm(root) {
+                    var source = field(root, "#ContentSource");
                     var rotation = field(root, "#RotationSeconds");
                     var items = field(root, "#ItemsPerLibrary");
                     var included = field(root, "#IncludedLibraryNames");
                     var excluded = field(root, "#ExcludedLibraryNames");
                     var overview = field(root, "#ShowOverview");
 
+                    var sourceValue = (source && source.value) || "Latest";
+
                     return {
+                        ContentSource: CONTENT_SOURCES.indexOf(sourceValue) === -1 ? "Latest" : sourceValue,
                         RotationSeconds: clamp(rotation ? rotation.value : "", 3, 60, 8),
                         ItemsPerLibrary: clamp(items ? items.value : "", 1, 20, 1),
                         IncludedLibraryNames: ((included && included.value) || "").trim(),

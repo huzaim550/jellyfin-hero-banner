@@ -1,15 +1,17 @@
 # Hero Banner for Jellyfin (Stable)
 
-Adds a rotating hero banner to the top of the Jellyfin home screen, showing recently added content from your libraries with:
+Adds a rotating hero banner to the top of the Jellyfin home screen, showing content from your libraries with:
 
 * Backdrop artwork
 * Title, year, rating, runtime, and genres
 * Overview/plot summary
 * **Play** and **More Info** buttons
-* Library name badge
+* Four content sources — recently added, continue watching, next up, or a random pick
+* A resume bar and a **Resume** label on anything you are part-way through
 * Smooth artwork cross-fades and slow zoom animation
 * Slide indicators showing the rotation progress
-* A tinted fallback background when artwork isn't available
+* A fallback background when artwork isn't available
+* Typography that ships with the plugin, so it looks the same everywhere
 * Responsive layout for phones, tablets, and desktop
 * Support for `prefers-reduced-motion`
 
@@ -87,11 +89,42 @@ You can configure:
 
 | Setting                          | Description                                                                  |
 | -------------------------------- | ---------------------------------------------------------------------------- |
+| **What the banner shows**        | Where the titles come from — see [Content sources](#content-sources).         |
 | **Rotation interval**            | How many seconds each title stays on screen. Supports 3–60 seconds.          |
-| **How many titles will slide**   | Number of recently added items to retrieve from each library. Supports 1–20. |
+| **How many titles will slide**   | How many titles the banner rotates through. Supports 1–20.                   |
 | **Only include these libraries** | Optional comma-separated list of libraries to include.                       |
 | **Exclude these libraries**      | Libraries that should always be excluded. Exclusions take priority.          |
 | **Show the overview text**       | Controls whether the plot/overview is displayed.                             |
+
+---
+
+# 🎬 Content sources
+
+**What the banner shows** decides where the titles come from.
+
+| Source                | What it shows                                                                 |
+| --------------------- | ----------------------------------------------------------------------------- |
+| **Recently added**    | The newest item in each library. The default, and the same for everyone.       |
+| **Continue watching** | What *you* have started but not finished, with a resume bar on each slide.     |
+| **Next up**           | The next unwatched episode of every series you are part-way through.           |
+| **Random pick**       | A random title from each library, reshuffled every time the home page loads.   |
+
+The last two are the interesting ones: they follow the person looking at the screen,
+so every user on the server sees their own banner rather than the same one.
+
+Two things worth knowing about them:
+
+* The **library filters do not apply** to *Continue watching* and *Next up*. Those
+  are drawn from your watch history rather than from a library, so there is no
+  library to filter on.
+* **How many titles will slide** means different things per source. *Recently added*
+  and *Random pick* take that many from **each** library; *Continue watching* and
+  *Next up* use it as a total across all of them. At the default of 1, the banner
+  shows a single title and does not rotate.
+
+Anything you are part-way through — from either *Continue watching* or *Next up* —
+gets a thin progress bar along the bottom of the banner and a **Resume** button
+instead of **Play**.
 
 Library names are matched case-insensitively and surrounding spaces are ignored.
 
@@ -325,7 +358,7 @@ and then:
 Create a directory such as:
 
 ```text
-plugins/HeroBanner_1.0.13.0/
+plugins/HeroBanner_1.0.15.0/
 ```
 
 Copy:

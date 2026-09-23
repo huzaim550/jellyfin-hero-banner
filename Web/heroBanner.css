@@ -338,6 +338,34 @@
 }
 
 /* ---------------------------------------------------------------------------
+   Resume progress. Sits along the bottom edge of the banner and is only ever
+   shown for an item that is part-watched, so nothing else carries an empty
+   track. Drawn as part of the banner rather than next to the dots to keep it
+   readable at a glance.
+   ------------------------------------------------------------------------ */
+.heroBannerPlugin-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.22);
+    z-index: 4;
+    pointer-events: none;
+}
+
+.heroBannerPlugin-progress[hidden] {
+    display: none;
+}
+
+.heroBannerPlugin-progress i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: #ffffff;
+}
+
+/* ---------------------------------------------------------------------------
    Keyframes
    ------------------------------------------------------------------------ */
 @keyframes heroBannerPlugin-rise {
