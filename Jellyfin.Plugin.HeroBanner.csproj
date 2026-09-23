@@ -6,8 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Jellyfin.Plugin.HeroBanner</AssemblyName>
     <RootNamespace>Jellyfin.Plugin.HeroBanner</RootNamespace>
-    <AssemblyVersion>1.0.13.0</AssemblyVersion>
-    <FileVersion>1.0.13.0</FileVersion>
+    <AssemblyVersion>1.0.14.0</AssemblyVersion>
+    <FileVersion>1.0.14.0</FileVersion>
     <Product>Hero Banner</Product>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
   </PropertyGroup>
@@ -27,6 +27,9 @@
     <EmbeddedResource Include="Configuration\configPage.html" />
     <EmbeddedResource Include="Web\heroBanner.js" />
     <EmbeddedResource Include="Web\heroBanner.css" />
+    <!-- Bundled webfonts. Kept out of the CSS so they can be cached on their
+         own and so the stylesheet stays readable. -->
+    <EmbeddedResource Include="Web\fonts\*.woff2" />
   </ItemGroup>
 
 </Project>

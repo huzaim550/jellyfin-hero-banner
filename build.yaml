@@ -1,6 +1,6 @@
 name: "Hero Banner"
 guid: "6f2e9f2a-6c3a-4a9a-9b7e-3a6a9e7c1d4f"
-version: "1.0.13.0"
+version: "1.0.14.0"
 targetAbi: "10.9.11.0"
 framework: "net8.0"
 owner: "huzaim550"
@@ -13,6 +13,7 @@ category: "General"
 artifacts:
   - "Jellyfin.Plugin.HeroBanner.dll"
 changelog: >
+  - 1.0.14.0: Restyle the banner away from the generic look. The violet accent colour and the library-name badge above the title are gone, so the artwork is the only colour on screen. The title is set in Inter Tight at 600 instead of an 800-weight system font, the year/rating/runtime line is now small letterspaced credits (runtime reads 2h 9m rather than 129 min), and the buttons lose the pill shape, the blur and the glow. The corner radius drops from 20px to 12px and the text shadows are removed in favour of a scrim that carries legibility on its own. Inter and Inter Tight now ship inside the plugin and are served from /HeroBanner/fonts/, so the banner keeps its typography on a server with no internet access.
   - 1.0.13.0: Refresh the banner visually - artwork now cross-fades with a slow push-in, the library name sits in a badge, a year/rating/runtime/genre line appears under the title, the buttons carry icons, and the slide indicators fill up over the rotation interval. Adds narrow-screen and reduced-motion handling.
   - 1.0.12.0: Fix the settings page never loading its script (fields were empty and Save did nothing), keep the banner on the Home tab instead of leaking onto Favorites, bring the banner back after navigating away and home again, stop the rotation timer from being reset by unrelated DOM changes, hide the banner when no library matches the filters, and require a signed-in user for the settings endpoint.
   - 1.0.11.0: Guard the settings page and banner UI against missing dashboard APIs and empty slide state so configuration changes and home-page refreshes do not crash the page.

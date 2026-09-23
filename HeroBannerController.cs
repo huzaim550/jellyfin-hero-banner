@@ -13,6 +13,17 @@ namespace Jellyfin.Plugin.HeroBanner
     public class HeroBannerController : ControllerBase
     {
         /// <summary>
+        /// The webfonts shipped with the plugin. The banner serves its own type
+        /// so it renders the same on a server with no internet access and on a
+        /// machine that has neither face installed.
+        /// </summary>
+        private static readonly HashSet<string> BundledFonts = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "inter-latin.woff2",
+            "inter-tight-latin.woff2"
+        };
+
+        /// <summary>
         /// Serves the injected client script.
         /// </summary>
         [HttpGet("heroBanner.js")]
@@ -46,6 +57,36 @@ namespace Jellyfin.Plugin.HeroBanner
             }
 
             return File(stream, "text/css");
+        }
+
+        /// <summary>
+        /// Serves a bundled webfont.
+        /// </summary>
+        /// <param name="name">File name of the font, with no path.</param>
+        [HttpGet("fonts/{name}")]
+        [AllowAnonymous]
+        public ActionResult GetFont(string name)
+        {
+            // Only names on the list are served, so a request cannot be aimed at
+            // any other embedded resource and no path ever reaches the lookup.
+            if (!BundledFonts.Contains(name))
+            {
+                return NotFound();
+            }
+
+            var stream = GetType().Assembly.GetManifestResourceStream(
+                "Jellyfin.Plugin.HeroBanner.Web.fonts." + name);
+
+            if (stream is null)
+            {
+                return NotFound();
+            }
+
+            // The fonts carry no version in their URL, so this stays short of
+            // "immutable" - a later release can replace them.
+            Response.Headers.CacheControl = "public, max-age=604800";
+
+            return File(stream, "font/woff2");
         }
 
         /// <summary>

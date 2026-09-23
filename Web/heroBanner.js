@@ -16,14 +16,18 @@
     };
 
     // Inline icons so the buttons don't depend on an icon font being present.
+    // The play mark is solid, the info mark is drawn as a stroke - see
+    // .heroBannerPlugin-icon-stroke in the stylesheet.
     var ICON_PLAY =
         '<svg class="heroBannerPlugin-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
         '<path d="M8 5.14v13.72a1 1 0 0 0 1.54.84l10.29-6.86a1 1 0 0 0 0-1.68L9.54 4.3A1 1 0 0 0 8 5.14z"/>' +
         "</svg>";
 
     var ICON_INFO =
-        '<svg class="heroBannerPlugin-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
-        '<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 4.2a1.3 1.3 0 1 1 0 2.6 1.3 1.3 0 0 1 0-2.6zM13.4 17h-2.8v-1.4h.7v-3.2h-.7v-1.4h2.1v4.6h.7V17z"/>' +
+        '<svg class="heroBannerPlugin-icon heroBannerPlugin-icon-stroke" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+        '<circle cx="12" cy="12" r="8.6"/>' +
+        '<path d="M12 11.3v5"/>' +
+        '<path d="M12 7.9h.01"/>' +
         "</svg>";
 
     var state = {
@@ -137,10 +141,7 @@
 
                 return ApiClient.getJSON(url)
                     .then(function (items) {
-                        return (items || []).map(function (item) {
-                            item.__libraryName = view.Name;
-                            return item;
-                        });
+                        return items || [];
                     })
                     .catch(function () {
                         return [];
@@ -199,7 +200,6 @@
             '</div>' +
             '<div class="heroBannerPlugin-scrim"></div>' +
             '<div class="heroBannerPlugin-content">' +
-                '<div class="heroBannerPlugin-eyebrow"></div>' +
                 '<div class="heroBannerPlugin-title"></div>' +
                 '<div class="heroBannerPlugin-meta"></div>' +
                 '<div class="heroBannerPlugin-overview"></div>' +
@@ -281,13 +281,27 @@
         content.classList.add("is-entering");
     }
 
-    function runtimeMinutes(ticks) {
+    // "2h 9m" rather than "129 min" - the same way a streaming service states
+    // it, and it keeps the meta line short.
+    function runtimeLabel(ticks) {
         if (!ticks) {
-            return 0;
+            return "";
         }
 
         // Jellyfin reports durations in ticks, 10,000 per millisecond.
-        return Math.round(ticks / 600000000);
+        var minutes = Math.round(ticks / 600000000);
+        if (!minutes) {
+            return "";
+        }
+
+        var hours = Math.floor(minutes / 60);
+        var rest = minutes % 60;
+
+        if (!hours) {
+            return rest + " min";
+        }
+
+        return rest ? hours + "h " + rest + "m" : hours + "h";
     }
 
     // Year / rating / runtime / genres, skipping whatever the item doesn't have.
@@ -303,9 +317,9 @@
             parts.push(item.OfficialRating);
         }
 
-        var minutes = runtimeMinutes(item.RunTimeTicks);
-        if (minutes) {
-            parts.push(minutes + " min");
+        var runtime = runtimeLabel(item.RunTimeTicks);
+        if (runtime) {
+            parts.push(runtime);
         }
         if (item.Genres && item.Genres.length) {
             parts.push(item.Genres.slice(0, 2).join(" / "));
@@ -321,7 +335,7 @@
                 var sep = document.createElement("span");
                 sep.className = "heroBannerPlugin-metaSep";
                 sep.setAttribute("aria-hidden", "true");
-                sep.textContent = "•";
+                sep.textContent = "·";
                 metaEl.appendChild(sep);
             }
 
@@ -389,7 +403,6 @@
         applySlideImage(imageUrl(item));
         replayEntrance();
 
-        state.el.querySelector(".heroBannerPlugin-eyebrow").textContent = item.__libraryName || "";
         state.el.querySelector(".heroBannerPlugin-title").textContent = item.Name || "";
 
         renderMeta(item);

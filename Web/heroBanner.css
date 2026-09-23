@@ -1,6 +1,10 @@
 /* ============================================================================
    HERO BANNER - rotating featured banner for the Jellyfin home screen.
 
+   The look is deliberately restrained: neutral type, no accent colour, no
+   glassmorphism. The artwork is the only source of colour, and the interface
+   stays out of its way.
+
    Everything is scoped under .heroBannerPlugin so the injected stylesheet
    cannot leak into the rest of the web client.
 
@@ -11,7 +15,6 @@
          .heroBannerPlugin-slide    backdrop image
        .heroBannerPlugin-scrim      gradient that keeps the text readable
        .heroBannerPlugin-content
-         .heroBannerPlugin-eyebrow  library name badge
          .heroBannerPlugin-title
          .heroBannerPlugin-meta     year / rating / runtime / genres
          .heroBannerPlugin-overview
@@ -19,11 +22,34 @@
        .heroBannerPlugin-dots       progress pills
    ========================================================================== */
 
+/* ---------------------------------------------------------------------------
+   Typefaces. Served by the plugin itself (HeroBannerController) so the banner
+   keeps its typography on a server with no internet access and on a machine
+   that has neither face installed. Both are Inter, SIL Open Font License 1.1.
+   ------------------------------------------------------------------------ */
+@font-face {
+    font-family: "HeroBanner Sans";
+    src: url("fonts/inter-latin.woff2") format("woff2");
+    font-weight: 400 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "HeroBanner Display";
+    src: url("fonts/inter-tight-latin.woff2") format("woff2");
+    font-weight: 400 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 .heroBannerPlugin {
     /* Tune the whole banner from here. */
-    --heroBannerPlugin-radius: 20px;
-    --heroBannerPlugin-accent: #8b5cf6;
-    --heroBannerPlugin-ink: #ffffff;
+    --heroBannerPlugin-radius: 12px;
+    --heroBannerPlugin-font-body: "HeroBanner Sans", "Inter", -apple-system,
+        BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --heroBannerPlugin-font-display: "HeroBanner Display", "Inter Tight",
+        var(--heroBannerPlugin-font-body);
 
     position: relative;
     width: 100%;
@@ -31,11 +57,10 @@
     margin: 0 0 1.5rem;
     border-radius: var(--heroBannerPlugin-radius);
     overflow: hidden;
-    background: #0b0b0d;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-        0 24px 48px -12px rgba(0, 0, 0, 0.7),
-        0 2px 6px rgba(0, 0, 0, 0.4);
+    background: #0a0a0b;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.9);
+    font-family: var(--heroBannerPlugin-font-body);
     z-index: 1;
     isolation: isolate;
     animation: heroBannerPlugin-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -55,21 +80,21 @@
 .heroBannerPlugin-slide {
     position: absolute;
     inset: 0;
-    background-color: #0b0b0d;
+    background-color: #0a0a0b;
     /* Stand-in for items with no artwork (music, home videos, freshly added
        files), so the banner never reads as a plain black rectangle. An item
        image, when there is one, is set inline and covers this. */
     background-image: radial-gradient(
-        130% 130% at 12% 0%,
-        rgba(139, 92, 246, 0.28) 0%,
-        rgba(139, 92, 246, 0.08) 38%,
-        rgba(11, 11, 13, 0) 68%
+        120% 120% at 15% 0%,
+        rgba(255, 255, 255, 0.1) 0%,
+        rgba(255, 255, 255, 0.03) 40%,
+        rgba(10, 10, 11, 0) 70%
     );
     background-size: cover;
     background-position: center 25%;
     background-repeat: no-repeat;
     opacity: 0;
-    transform: scale(1.02);
+    transform: scale(1.01);
     transition: opacity 0.9s ease-in-out;
     will-change: opacity;
 }
@@ -82,6 +107,8 @@
 /* ---------------------------------------------------------------------------
    Scrim: two gradients. The vertical one anchors the text to the bottom edge,
    the horizontal one keeps the left column readable over a bright backdrop.
+   It carries the contrast on its own, which is why nothing below uses a text
+   shadow - shadows on body copy read as a filter, not as design.
    ------------------------------------------------------------------------ */
 .heroBannerPlugin-scrim {
     position: absolute;
@@ -90,18 +117,17 @@
     background:
         linear-gradient(
             180deg,
-            rgba(8, 8, 10, 0.34) 0%,
-            rgba(8, 8, 10, 0) 22%,
-            rgba(8, 8, 10, 0.18) 38%,
-            rgba(8, 8, 10, 0.72) 74%,
-            rgba(8, 8, 10, 0.96) 100%
+            rgba(6, 6, 7, 0.5) 0%,
+            rgba(6, 6, 7, 0.05) 22%,
+            rgba(6, 6, 7, 0.4) 60%,
+            rgba(6, 6, 7, 0.95) 100%
         ),
         linear-gradient(
-            100deg,
-            rgba(8, 8, 10, 0.92) 0%,
-            rgba(8, 8, 10, 0.6) 42%,
-            rgba(8, 8, 10, 0.05) 72%,
-            rgba(8, 8, 10, 0) 100%
+            94deg,
+            rgba(6, 6, 7, 0.95) 0%,
+            rgba(6, 6, 7, 0.72) 36%,
+            rgba(6, 6, 7, 0.16) 68%,
+            rgba(6, 6, 7, 0) 100%
         );
     z-index: 1;
     pointer-events: none;
@@ -116,8 +142,8 @@
     right: 0;
     bottom: clamp(1.5rem, 3.5vh, 3rem);
     padding: 0 clamp(1.25rem, 3.5vw, 3.25rem);
-    max-width: min(46rem, 62%);
-    color: var(--heroBannerPlugin-ink);
+    max-width: min(44rem, 60%);
+    color: #ffffff;
     z-index: 3;
     pointer-events: none;
 }
@@ -128,75 +154,51 @@
 }
 
 /* Staged entrance, replayed on every slide change by re-adding this class. */
-.heroBannerPlugin-content.is-entering .heroBannerPlugin-eyebrow {
-    animation: heroBannerPlugin-in-left 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
 .heroBannerPlugin-content.is-entering .heroBannerPlugin-title {
-    animation: heroBannerPlugin-in-left 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.07s both;
+    animation: heroBannerPlugin-in-left 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .heroBannerPlugin-content.is-entering .heroBannerPlugin-meta {
-    animation: heroBannerPlugin-in-left 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
+    animation: heroBannerPlugin-in-left 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.07s both;
 }
 
 .heroBannerPlugin-content.is-entering .heroBannerPlugin-overview {
-    animation: heroBannerPlugin-in-left 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+    animation: heroBannerPlugin-in-left 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.14s both;
 }
 
 .heroBannerPlugin-content.is-entering .heroBannerPlugin-actions {
-    animation: heroBannerPlugin-in-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.27s both;
-}
-
-/* Library name, as a badge. */
-.heroBannerPlugin-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5em;
-    padding: 0.34em 0.85em;
-    margin-bottom: 0.9em;
-    border-radius: 999px;
-    background: rgba(139, 92, 246, 0.16);
-    border: 1px solid rgba(139, 92, 246, 0.42);
-    color: #d8ccff;
-    font-size: 0.72em;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-}
-
-.heroBannerPlugin-eyebrow:empty {
-    display: none;
+    animation: heroBannerPlugin-in-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.21s both;
 }
 
 .heroBannerPlugin-title {
-    font-size: clamp(1.9em, 4.2vw, 3.05em);
-    font-weight: 800;
-    line-height: 1.04;
-    letter-spacing: -0.02em;
-    margin: 0 0 0.45em;
-    color: var(--heroBannerPlugin-ink);
-    text-shadow: 0 2px 18px rgba(0, 0, 0, 0.75);
+    font-family: var(--heroBannerPlugin-font-display);
+    font-size: clamp(1.75rem, 3.4vw, 3.1rem);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.022em;
+    margin: 0 0 0.65rem;
+    color: #ffffff;
+    text-wrap: balance;
 }
 
-/* Year / rating / runtime / genres */
+/* Year / rating / runtime / genres. Set as a small letterspaced line: it reads
+   as credits rather than as a second headline competing with the title. */
 .heroBannerPlugin-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.6em;
-    margin-bottom: 0.7em;
-    font-size: 0.86em;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.78);
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
+    gap: 0.55em;
+    margin-bottom: 0.9rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.66);
 }
 
 .heroBannerPlugin-metaSep {
-    color: rgba(255, 255, 255, 0.35);
-    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0;
 }
 
 .heroBannerPlugin-overview {
@@ -205,12 +207,11 @@
     line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin: 0 0 1.4em;
-    max-width: 58ch;
-    font-size: 0.97em;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.86);
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+    margin: 0 0 1.5rem;
+    max-width: 56ch;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.78);
 }
 
 /* ---------------------------------------------------------------------------
@@ -219,76 +220,75 @@
 .heroBannerPlugin-actions {
     display: flex;
     align-items: center;
-    gap: 0.7em;
+    gap: 0.7rem;
     flex-wrap: wrap;
 }
 
 .heroBannerPlugin-actions button {
     display: inline-flex;
     align-items: center;
-    gap: 0.55em;
-    padding: 0.72em 1.5em;
+    gap: 0.5rem;
+    padding: 0.72rem 1.3rem;
     border: 1px solid transparent;
-    border-radius: 999px;
+    border-radius: 8px;
     font-family: inherit;
-    font-size: 0.95em;
-    font-weight: 700;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     line-height: 1;
     cursor: pointer;
     transition:
-        transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
-        background-color 0.25s ease,
-        border-color 0.25s ease,
-        box-shadow 0.25s ease;
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 .heroBannerPlugin-icon {
-    width: 1.15em;
-    height: 1.15em;
+    width: 1.05em;
+    height: 1.05em;
     flex: none;
     fill: currentColor;
+}
+
+/* Declared after the rule above so it wins their shared specificity. */
+.heroBannerPlugin-icon-stroke {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 /* Primary */
 .heroBannerPlugin-play {
     background: #ffffff;
-    color: #0b0b0d;
-    box-shadow: 0 8px 24px -6px rgba(255, 255, 255, 0.4);
+    color: #0a0a0b;
 }
 
 .heroBannerPlugin-play:hover {
-    background: #ffffff;
-    transform: translateY(-2px);
-    box-shadow: 0 12px 28px -6px rgba(255, 255, 255, 0.55);
+    background: rgba(255, 255, 255, 0.84);
 }
 
-/* Secondary, glassy */
+/* Secondary */
 .heroBannerPlugin-more {
-    background: rgba(255, 255, 255, 0.14);
-    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.22);
     color: #ffffff;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
 }
 
 .heroBannerPlugin-more:hover {
-    background: rgba(255, 255, 255, 0.24);
-    border-color: rgba(255, 255, 255, 0.45);
-    transform: translateY(-2px);
-}
-
-.heroBannerPlugin-actions button:active {
-    transform: translateY(0) scale(0.98);
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.36);
 }
 
 .heroBannerPlugin-actions button:focus-visible,
 .heroBannerPlugin-dot:focus-visible {
-    outline: 2px solid var(--heroBannerPlugin-accent);
+    outline: 2px solid #ffffff;
     outline-offset: 3px;
 }
 
 /* ---------------------------------------------------------------------------
-   Progress pills. The active one fills over the rotation interval, so the
+   Progress bars. The active one fills over the rotation interval, so the
    banner shows how long until the next title.
    ------------------------------------------------------------------------ */
 .heroBannerPlugin-dots {
@@ -297,30 +297,29 @@
     bottom: clamp(1.5rem, 3.5vh, 3rem);
     display: flex;
     align-items: center;
-    gap: 0.5em;
+    gap: 0.375rem;
     z-index: 4;
 }
 
 .heroBannerPlugin-dot {
     position: relative;
     display: block;
-    width: 22px;
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.28);
+    width: 18px;
+    height: 2px;
+    border-radius: 1px;
+    background: rgba(255, 255, 255, 0.24);
     cursor: pointer;
     overflow: hidden;
     transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.35s ease;
 }
 
 .heroBannerPlugin-dot:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.45);
 }
 
 .heroBannerPlugin-dot.active {
-    width: 44px;
-    background: rgba(255, 255, 255, 0.32);
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+    width: 40px;
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .heroBannerPlugin-dot i {
@@ -342,23 +341,23 @@
    Keyframes
    ------------------------------------------------------------------------ */
 @keyframes heroBannerPlugin-rise {
-    from { opacity: 0; transform: translateY(24px); }
+    from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes heroBannerPlugin-in-left {
-    from { opacity: 0; transform: translateX(-18px); }
+    from { opacity: 0; transform: translateX(-12px); }
     to   { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes heroBannerPlugin-in-up {
-    from { opacity: 0; transform: translateY(14px); }
+    from { opacity: 0; transform: translateY(10px); }
     to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Slow, subtle push-in on the visible artwork. */
 @keyframes heroBannerPlugin-drift {
-    from { transform: scale(1.08); }
+    from { transform: scale(1.05); }
     to   { transform: scale(1.0); }
 }
 
@@ -373,44 +372,39 @@
 @media (max-width: 700px) {
     .heroBannerPlugin {
         height: clamp(280px, 44vh, 400px);
-        border-radius: 14px;
+        border-radius: 10px;
         margin-bottom: 1rem;
     }
 
     .heroBannerPlugin-content {
         max-width: 100%;
-        bottom: 3.2em;
-    }
-
-    .heroBannerPlugin-eyebrow {
-        font-size: 0.64em;
-        margin-bottom: 0.7em;
+        bottom: 3.2rem;
     }
 
     .heroBannerPlugin-title {
-        font-size: clamp(1.35em, 6.5vw, 1.9em);
-        margin-bottom: 0.35em;
+        font-size: clamp(1.3rem, 6vw, 1.85rem);
+        margin-bottom: 0.5rem;
     }
 
     .heroBannerPlugin-meta {
-        font-size: 0.78em;
-        margin-bottom: 0.5em;
+        font-size: 0.6875rem;
+        margin-bottom: 0.7rem;
     }
 
     .heroBannerPlugin-overview {
         -webkit-line-clamp: 2;
         line-clamp: 2;
-        font-size: 0.85em;
-        margin-bottom: 1em;
+        font-size: 0.875rem;
+        margin-bottom: 1.1rem;
     }
 
     .heroBannerPlugin-actions button {
-        padding: 0.6em 1.15em;
-        font-size: 0.85em;
+        padding: 0.62rem 1.05rem;
+        font-size: 0.8125rem;
     }
 
     .heroBannerPlugin-dots {
-        bottom: 1.15em;
+        bottom: 1.15rem;
     }
 }
 
@@ -433,7 +427,6 @@
 @media (prefers-reduced-motion: reduce) {
     .heroBannerPlugin,
     .heroBannerPlugin-slide,
-    .heroBannerPlugin-content.is-entering .heroBannerPlugin-eyebrow,
     .heroBannerPlugin-content.is-entering .heroBannerPlugin-title,
     .heroBannerPlugin-content.is-entering .heroBannerPlugin-meta,
     .heroBannerPlugin-content.is-entering .heroBannerPlugin-overview,
