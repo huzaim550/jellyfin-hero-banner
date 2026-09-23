@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "1.0.15.0",
+        "changelog": "Add a \"What the banner shows\" setting with four content sources - recently added, continue watching, next up, and a random pick. Continue watching and next up follow the signed-in user rather than the library, so each person on the server now sees their own banner, and anything part-watched gets a resume bar along the bottom with a Resume button instead of Play. Note that the library include/exclude filters do not apply to those two sources, and that \"How many titles will slide\" counts per library for recently added and random, but as a total for the other two.",
+        "targetAbi": "10.9.11.0",
+        "sourceUrl": "https://github.com/huzaim550/jellyfin-hero-banner/releases/download/v1.0.15.0/herobanner_1.0.15.0.zip",
+        "checksum": "ebc4e775ee6967c0b32df48d6fbe7531",
+        "timestamp": "2026-09-23T14:42:33Z"
+      },
+      {
         "version": "1.0.14.0",
         "changelog": "Restyle the banner away from the generic look. The violet accent colour and the library-name badge above the title are gone, so the artwork is the only colour on screen. The title is set in Inter Tight at 600 instead of an 800-weight system font, the year/rating/runtime line is now small letterspaced credits (runtime reads 2h 9m rather than 129 min), and the buttons lose the pill shape, the blur and the glow. The corner radius drops from 20px to 12px and the text shadows are removed in favour of a scrim that carries legibility on its own. Inter and Inter Tight now ship inside the plugin and are served from /HeroBanner/fonts/, so the banner keeps its typography on a server with no internet access.",
         "targetAbi": "10.9.11.0",
