@@ -17,7 +17,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Read version from csproj
         id: version
@@ -125,10 +125,26 @@ jobs:
 
               return "Bug fixes and improvements."
 
+          def target_abi():
+              """The Jellyfin ABI this build targets, read from build.yaml.
+
+              Hardcoding it here meant a release built against a newer Jellyfin
+              was still advertised under the old ABI, so servers running that
+              newer version would not offer the update.
+              """
+              try:
+                  with open("build.yaml", "r", encoding="utf-8") as f:
+                      text = f.read()
+              except OSError:
+                  return "12.1.0.0"
+
+              match = re.search(r'^targetAbi:\s*"?([\d.]+)"?\s*$', text, re.MULTILINE)
+              return match.group(1) if match else "12.1.0.0"
+
           new_version = {
               "version": VERSION,
               "changelog": changelog_for(VERSION),
-              "targetAbi": "10.9.11.0",
+              "targetAbi": target_abi(),
               "sourceUrl": SOURCE_URL,
               "checksum": CHECKSUM,
               "timestamp": TIMESTAMP

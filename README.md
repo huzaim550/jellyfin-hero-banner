@@ -358,7 +358,7 @@ and then:
 Create a directory such as:
 
 ```text
-plugins/HeroBanner_1.0.15.0/
+plugins/HeroBanner_1.0.16.0/
 ```
 
 Copy:

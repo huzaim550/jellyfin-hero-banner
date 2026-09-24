@@ -299,6 +299,29 @@
         return "";
     }
 
+    // Navigates to an item's detail page.
+    //
+    // The route is written as "#/details?id=..." - the form jellyfin-web has
+    // used since 10.11, where it routes with the History API inside the hash.
+    // This used to emit the older "#!"-prefixed form; the web client still
+    // catches that on a compatibility route and rewrites it, but it logs a
+    // "[BangRedirect] You are using a deprecated URL format" warning for every
+    // click and Jellyfin has said the redirect will be removed. The serverId is
+    // carried for the same reason the web client's own links carry it: it is
+    // what resolves the item on a client signed in to more than one server.
+    function detailsUrl(id, autoplay) {
+        var url = "#/details?id=" + encodeURIComponent(id);
+
+        if (typeof ApiClient.serverId === "function") {
+            var serverId = ApiClient.serverId();
+            if (serverId) {
+                url += "&serverId=" + encodeURIComponent(serverId);
+            }
+        }
+
+        return autoplay ? url + "&autoplay=true" : url;
+    }
+
     function buildBanner() {
         var el = document.createElement("div");
         el.id = "heroBannerPlugin";
@@ -552,10 +575,10 @@
         renderDots();
 
         state.el.querySelector(".heroBannerPlugin-play").onclick = function () {
-            location.hash = "#!/details?id=" + item.Id + "&autoplay=true";
+            location.hash = detailsUrl(item.Id, true);
         };
         state.el.querySelector(".heroBannerPlugin-more").onclick = function () {
-            location.hash = "#!/details?id=" + item.Id;
+            location.hash = detailsUrl(item.Id, false);
         };
     }
 

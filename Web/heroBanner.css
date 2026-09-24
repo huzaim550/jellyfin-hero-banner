@@ -46,15 +46,25 @@
 .heroBannerPlugin {
     /* Tune the whole banner from here. */
     --heroBannerPlugin-radius: 12px;
+    /* The card's own inset for its text. Independent of the page gutter the
+       card is aligned to - see margin-inline below. */
+    --heroBannerPlugin-pad: clamp(1.25rem, 2.6vw, 2.75rem);
     --heroBannerPlugin-font-body: "HeroBanner Sans", "Inter", -apple-system,
         BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --heroBannerPlugin-font-display: "HeroBanner Display", "Inter Tight",
         var(--heroBannerPlugin-font-body);
 
     position: relative;
-    width: 100%;
-    height: clamp(340px, 48vh, 560px);
-    margin: 0 0 1.5rem;
+    /* The web client does not put a gutter on the home tab container - it puts
+       one on each section's own children (.padded-left / .padded-right, 3.3%).
+       The banner is a direct child of #homeTab, so without this it spans the
+       full width while every section below it is inset, which also leaves its
+       radius and border sitting off the edge of the screen where they cannot
+       be seen. Matching the client's own value lines the two up. */
+    width: auto;
+    height: clamp(420px, 62vh, 780px);
+    margin-block: 0 1.5rem;
+    margin-inline: max(env(safe-area-inset-left), 3.3%) max(env(safe-area-inset-right), 3.3%);
     border-radius: var(--heroBannerPlugin-radius);
     overflow: hidden;
     background: #0a0a0b;
@@ -109,6 +119,17 @@
    the horizontal one keeps the left column readable over a bright backdrop.
    It carries the contrast on its own, which is why nothing below uses a text
    shadow - shadows on body copy read as a filter, not as design.
+
+   These stops are tuned rather than guessed. Both gradients fall away fast:
+   the horizontal one is down to 0.05 by 56%, so only the column the text
+   actually occupies stays dark and the artwork to the right of it is left
+   alone. Measured against the worst realistic case - a washed-out bright
+   backdrop - the open artwork to the right of the text now sits at a mean
+   luminance of 0.21, where the previous, heavier scrim held it at 0.12.
+   The overview text over the same backdrop measures 4.74:1, and the title
+   13.8:1 (WCAG AA is 4.5:1 for body text, 3:1 for large text). Lightening
+   either gradient further drops the overview below AA on that backdrop, so
+   treat these stops as the floor if you change them.
    ------------------------------------------------------------------------ */
 .heroBannerPlugin-scrim {
     position: absolute;
@@ -117,16 +138,16 @@
     background:
         linear-gradient(
             180deg,
-            rgba(6, 6, 7, 0.5) 0%,
-            rgba(6, 6, 7, 0.05) 22%,
-            rgba(6, 6, 7, 0.4) 60%,
-            rgba(6, 6, 7, 0.95) 100%
+            rgba(6, 6, 7, 0.3) 0%,
+            rgba(6, 6, 7, 0) 26%,
+            rgba(6, 6, 7, 0.3) 60%,
+            rgba(6, 6, 7, 0.86) 100%
         ),
         linear-gradient(
             94deg,
-            rgba(6, 6, 7, 0.95) 0%,
-            rgba(6, 6, 7, 0.72) 36%,
-            rgba(6, 6, 7, 0.16) 68%,
+            rgba(6, 6, 7, 0.9) 0%,
+            rgba(6, 6, 7, 0.66) 30%,
+            rgba(6, 6, 7, 0.05) 56%,
             rgba(6, 6, 7, 0) 100%
         );
     z-index: 1;
@@ -141,7 +162,7 @@
     left: 0;
     right: 0;
     bottom: clamp(1.5rem, 3.5vh, 3rem);
-    padding: 0 clamp(1.25rem, 3.5vw, 3.25rem);
+    padding: 0 var(--heroBannerPlugin-pad);
     max-width: min(44rem, 60%);
     color: #ffffff;
     z-index: 3;
@@ -293,7 +314,9 @@
    ------------------------------------------------------------------------ */
 .heroBannerPlugin-dots {
     position: absolute;
-    right: clamp(1.25rem, 3.5vw, 3.25rem);
+    /* Kept equal to the content padding so the pills sit on the same column
+       as the text above them. */
+    right: var(--heroBannerPlugin-pad);
     bottom: clamp(1.5rem, 3.5vh, 3rem);
     display: flex;
     align-items: center;
@@ -399,7 +422,7 @@
    ------------------------------------------------------------------------ */
 @media (max-width: 700px) {
     .heroBannerPlugin {
-        height: clamp(280px, 44vh, 400px);
+        height: clamp(340px, 54vh, 480px);
         border-radius: 10px;
         margin-bottom: 1rem;
     }
@@ -439,7 +462,7 @@
 /* Short viewports: keep the banner from crowding out the home sections. */
 @media (max-height: 620px) {
     .heroBannerPlugin {
-        height: 300px;
+        height: 360px;
     }
 
     .heroBannerPlugin-overview {

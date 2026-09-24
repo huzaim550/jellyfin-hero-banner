@@ -1,13 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>Jellyfin.Plugin.HeroBanner</AssemblyName>
     <RootNamespace>Jellyfin.Plugin.HeroBanner</RootNamespace>
-    <AssemblyVersion>1.0.15.0</AssemblyVersion>
-    <FileVersion>1.0.15.0</FileVersion>
+    <AssemblyVersion>1.0.16.0</AssemblyVersion>
+    <FileVersion>1.0.16.0</FileVersion>
     <Product>Hero Banner</Product>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
   </PropertyGroup>
@@ -19,8 +19,8 @@
       then use the matching Jellyfin.Controller / Jellyfin.Model package version.
       https://www.nuget.org/packages/Jellyfin.Controller
     -->
-    <PackageReference Include="Jellyfin.Controller" Version="10.9.11" />
-    <PackageReference Include="Jellyfin.Model" Version="10.9.11" />
+    <PackageReference Include="Jellyfin.Controller" Version="12.1.0" />
+    <PackageReference Include="Jellyfin.Model" Version="12.1.0" />
   </ItemGroup>
 
   <ItemGroup>
