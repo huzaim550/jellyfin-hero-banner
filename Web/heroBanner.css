@@ -1,6 +1,18 @@
 /* ============================================================================
    HERO BANNER - rotating featured banner for the Jellyfin home screen.
 
+   Built as a full-bleed billboard: the artwork runs to both edges of the
+   viewport with no card, no corner radius and no gutter, and its bottom edge
+   is masked away so it dissolves into the page and the home sections below
+   emerge from it rather than meeting a hard line. The text column stays on the
+   page's own gutter, so the title sits on the same column as the rows
+   underneath.
+
+   The one ordering rule this layout has: anything that must stay readable or
+   clickable is anchored above --heroBannerPlugin-fade. Below that line the
+   banner is masked out, and a masked-out region is neither painted nor
+   hit-testable.
+
    The look is deliberately restrained: neutral type, no accent colour, no
    glassmorphism. The artwork is the only source of colour, and the interface
    stays out of its way.
@@ -15,11 +27,13 @@
          .heroBannerPlugin-slide    backdrop image
        .heroBannerPlugin-scrim      gradient that keeps the text readable
        .heroBannerPlugin-content
-         .heroBannerPlugin-title
+         .heroBannerPlugin-title    either a ClearLogo image or the item name
+           .heroBannerPlugin-titleLogo
          .heroBannerPlugin-meta     year / rating / runtime / genres
          .heroBannerPlugin-overview
          .heroBannerPlugin-actions  Play + More info
-       .heroBannerPlugin-dots       progress pills
+         .heroBannerPlugin-dots     progress pills
+       .heroBannerPlugin-progress   resume bar, pinned to the bottom edge
    ========================================================================== */
 
 /* ---------------------------------------------------------------------------
@@ -44,36 +58,80 @@
 }
 
 .heroBannerPlugin {
-    /* Tune the whole banner from here. */
-    --heroBannerPlugin-radius: 12px;
-    /* The card's own inset for its text. Independent of the page gutter the
-       card is aligned to - see margin-inline below. */
-    --heroBannerPlugin-pad: clamp(1.25rem, 2.6vw, 2.75rem);
+    /* The page gutter. Jellyfin 12.1 does not put a gutter on the home tab
+       container - it insets each section's own children (.padded-left /
+       .padded-right, 3.3%). The banner itself is full-bleed and ignores this,
+       but its text column does not: this is what keeps the title sitting on
+       the same column as the section headings below it. */
+    --heroBannerPlugin-gutter: max(env(safe-area-inset-left), 3.3%);
+    /* The height of the transparent tail along the bottom edge - the band the
+       artwork dissolves in. Everything that has to stay readable or clickable
+       is anchored above it, because a masked-out region is neither visible nor
+       hit-testable. Retuned per breakpoint rather than here. */
+    --heroBannerPlugin-fade: clamp(80px, 10vh, 140px);
+    /* The content column's bottom edge, derived from the fade so the
+       breakpoints only ever have to move one number. */
+    --heroBannerPlugin-rail: calc(var(--heroBannerPlugin-fade) + 1.75rem);
     --heroBannerPlugin-font-body: "HeroBanner Sans", "Inter", -apple-system,
         BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --heroBannerPlugin-font-display: "HeroBanner Display", "Inter Tight",
         var(--heroBannerPlugin-font-body);
 
     position: relative;
-    /* The web client does not put a gutter on the home tab container - it puts
-       one on each section's own children (.padded-left / .padded-right, 3.3%).
-       The banner is a direct child of #homeTab, so without this it spans the
-       full width while every section below it is inset, which also leaves its
-       radius and border sitting off the edge of the screen where they cannot
-       be seen. Matching the client's own value lines the two up. */
+    /* Full bleed: no inline margin, no radius, no border, no shadow. A card
+       edge is exactly what this design does not have. */
     width: auto;
-    height: clamp(420px, 62vh, 780px);
-    margin-block: 0 1.5rem;
-    margin-inline: max(env(safe-area-inset-left), 3.3%) max(env(safe-area-inset-right), 3.3%);
-    border-radius: var(--heroBannerPlugin-radius);
+    height: clamp(440px, 76vh, 860px);
+    margin: 0 0 1.75rem;
     overflow: hidden;
     background: #0a0a0b;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.9);
     font-family: var(--heroBannerPlugin-font-body);
     z-index: 1;
     isolation: isolate;
-    animation: heroBannerPlugin-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    /* The bottom edge dissolves into the page by masking the banner out,
+       rather than by painting a gradient towards a guessed page colour.
+
+       The guess was the obvious way to do this and it does not survive contact
+       with the web client: jellyfin-web paints the page background on <html>
+       while setting body transparent, and puts the real backdrop in a separate
+       fixed .backgroundContainer that runs at 0.86 opacity when auto-backdrops
+       are on. Reading a background-color off the DOM can therefore return a
+       colour that is not what is actually painted behind the banner - and a
+       theme with a background-image has no colour to read at all. A mask has
+       no opinion about what is behind it, so it is seamless against a flat
+       theme, a backdrop image, or a theme background-image alike.
+
+       The stops are eased rather than linear so the ramp has no visible band
+       at either end. Where mask-image is unsupported the banner simply keeps
+       a hard bottom edge, which is a clean degradation rather than a wrong
+       colour. */
+    -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - var(--heroBannerPlugin-fade)),
+        rgba(0, 0, 0, 0.9) calc(100% - var(--heroBannerPlugin-fade) * 0.6),
+        rgba(0, 0, 0, 0.55) calc(100% - var(--heroBannerPlugin-fade) * 0.32),
+        rgba(0, 0, 0, 0.2) calc(100% - var(--heroBannerPlugin-fade) * 0.12),
+        rgba(0, 0, 0, 0.04) calc(100% - var(--heroBannerPlugin-fade) * 0.03),
+        transparent 100%
+    );
+    mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - var(--heroBannerPlugin-fade)),
+        rgba(0, 0, 0, 0.9) calc(100% - var(--heroBannerPlugin-fade) * 0.6),
+        rgba(0, 0, 0, 0.55) calc(100% - var(--heroBannerPlugin-fade) * 0.32),
+        rgba(0, 0, 0, 0.2) calc(100% - var(--heroBannerPlugin-fade) * 0.12),
+        rgba(0, 0, 0, 0.04) calc(100% - var(--heroBannerPlugin-fade) * 0.03),
+        transparent 100%
+    );
+    -webkit-mask-size: 100% 100%;
+    mask-size: 100% 100%;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    /* A full-bleed element sliding up reads as a card arriving, not as a
+       billboard, so the entrance is a plain fade. */
+    animation: heroBannerPlugin-fade 0.7s ease both;
 }
 
 /* ---------------------------------------------------------------------------
@@ -83,7 +141,6 @@
 .heroBannerPlugin-stage {
     position: absolute;
     inset: 0;
-    border-radius: inherit;
     overflow: hidden;
 }
 
@@ -115,8 +172,10 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Scrim: two gradients. The vertical one anchors the text to the bottom edge,
-   the horizontal one keeps the left column readable over a bright backdrop.
+   Scrim: two gradients. The vertical one anchors the text to the lower half of
+   the banner and deepens towards the bottom, where the mask takes over. The
+   horizontal one keeps the left column readable over a bright backdrop.
+
    It carries the contrast on its own, which is why nothing below uses a text
    shadow - shadows on body copy read as a filter, not as design.
 
@@ -124,17 +183,16 @@
    the horizontal one is down to 0.05 by 56%, so only the column the text
    actually occupies stays dark and the artwork to the right of it is left
    alone. Measured against the worst realistic case - a washed-out bright
-   backdrop - the open artwork to the right of the text now sits at a mean
-   luminance of 0.21, where the previous, heavier scrim held it at 0.12.
-   The overview text over the same backdrop measures 4.74:1, and the title
-   13.8:1 (WCAG AA is 4.5:1 for body text, 3:1 for large text). Lightening
-   either gradient further drops the overview below AA on that backdrop, so
-   treat these stops as the floor if you change them.
+   backdrop - the overview text sits at 4.74:1 and the title at 13.8:1 (WCAG
+   AA is 4.5:1 for body text, 3:1 for large text), and on the taller
+   full-bleed banner both come out higher still, because the text column now
+   sits lower in the vertical ramp. Lightening either gradient further would
+   drop the overview towards AA on that backdrop, so treat these stops as the
+   floor if you change them.
    ------------------------------------------------------------------------ */
 .heroBannerPlugin-scrim {
     position: absolute;
     inset: 0;
-    border-radius: inherit;
     background:
         linear-gradient(
             180deg,
@@ -161,9 +219,12 @@
     position: absolute;
     left: 0;
     right: 0;
-    bottom: clamp(1.5rem, 3.5vh, 3rem);
-    padding: 0 var(--heroBannerPlugin-pad);
-    max-width: min(44rem, 60%);
+    /* Anchored off the artwork fade, so the text always sits on fully opaque
+       banner rather than in the part that is dissolving into the page. */
+    bottom: var(--heroBannerPlugin-rail);
+    box-sizing: border-box;
+    padding: 0 var(--heroBannerPlugin-gutter);
+    max-width: min(46rem, 62%);
     color: #ffffff;
     z-index: 3;
     pointer-events: none;
@@ -191,15 +252,39 @@
     animation: heroBannerPlugin-in-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.21s both;
 }
 
+/* Holds either the item name as text or a ClearLogo image - see renderTitle()
+   in heroBanner.js. The type styles below only bite in the text case. */
 .heroBannerPlugin-title {
     font-family: var(--heroBannerPlugin-font-display);
-    font-size: clamp(1.75rem, 3.4vw, 3.1rem);
+    font-size: clamp(2rem, 3.8vw, 3.4rem);
     font-weight: 600;
     line-height: 1.06;
     letter-spacing: -0.022em;
-    margin: 0 0 0.65rem;
+    margin: 0 0 0.7rem;
     color: #ffffff;
     text-wrap: balance;
+}
+
+/* Title artwork, when the item has a ClearLogo.
+
+   max-width and max-height together are what size it: an img with auto
+   dimensions and both caps scales to fit inside them and keeps its ratio, so
+   a wide wordmark and a tall one both land correctly without a fixed box.
+
+   The filter is the interesting part. ClearLogo art comes from TheMovieDB in
+   whatever colour whoever uploaded it chose, and plenty of them are dark or
+   mid-tone - over this scrim those are somewhere between muddy and invisible.
+   Flattening every logo to white is what Netflix does with its title lockups,
+   and it is the same rule the rest of this stylesheet follows: the artwork is
+   the only thing on screen carrying colour. Alpha survives brightness(0)
+   invert(1), so the wordmark keeps clean edges. */
+.heroBannerPlugin-titleLogo {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: min(100%, 26rem);
+    max-height: clamp(3.25rem, 9vh, 7rem);
+    filter: brightness(0) invert(1);
 }
 
 /* Year / rating / runtime / genres. Set as a small letterspaced line: it reads
@@ -249,9 +334,11 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.72rem 1.3rem;
+    padding: 0.8rem 1.5rem;
     border: 1px solid transparent;
-    border-radius: 8px;
+    /* A 4px corner, the way a streaming service draws a button. Enough to
+       take the edge off without reading as a pill. */
+    border-radius: 4px;
     font-family: inherit;
     font-size: 0.875rem;
     font-weight: 600;
@@ -260,7 +347,6 @@
     cursor: pointer;
     transition:
         background-color 0.2s ease,
-        border-color 0.2s ease,
         color 0.2s ease;
 }
 
@@ -290,16 +376,18 @@
     background: rgba(255, 255, 255, 0.84);
 }
 
-/* Secondary */
+/* Secondary. Flat translucent fill rather than a filled-and-outlined pair -
+   the outline was doing the work the fill should do, and it read as a
+   different kind of object than the button next to it. The transparent border
+   is kept from the shared rule above so both buttons stay the same height. */
 .heroBannerPlugin-more {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: transparent;
     color: #ffffff;
 }
 
 .heroBannerPlugin-more:hover {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.36);
+    background: rgba(255, 255, 255, 0.24);
 }
 
 .heroBannerPlugin-actions button:focus-visible,
@@ -312,16 +400,18 @@
    Progress bars. The active one fills over the rotation interval, so the
    banner shows how long until the next title.
    ------------------------------------------------------------------------ */
+/* In the content column's flow, directly under the buttons. They used to be
+   positioned against the banner's bottom edge, which worked when they sat
+   beside the text; under it, they have to travel with it, or they drift away
+   from the block as the overview and meta lines come and go. */
 .heroBannerPlugin-dots {
-    position: absolute;
-    /* Kept equal to the content padding so the pills sit on the same column
-       as the text above them. */
-    right: var(--heroBannerPlugin-pad);
-    bottom: clamp(1.5rem, 3.5vh, 3rem);
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    z-index: 4;
+    margin-top: 1.4rem;
+    /* The content column switches pointer events off wholesale; the pills are
+       clickable, so they opt back in. */
+    pointer-events: auto;
 }
 
 .heroBannerPlugin-dot {
@@ -361,16 +451,21 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Resume progress. Sits along the bottom edge of the banner and is only ever
-   shown for an item that is part-watched, so nothing else carries an empty
-   track. Drawn as part of the banner rather than next to the dots to keep it
-   readable at a glance.
+   Resume progress. Only ever shown for an item that is part-watched, so
+   nothing else carries an empty track. Drawn as part of the banner rather than
+   next to the dots to keep it readable at a glance.
+
+   It sits at the top of the artwork fade rather than on the banner's bottom
+   edge, which is where it used to be. Anything below that line is masked out
+   of the banner, so a bar parked on the edge would simply not be drawn - and
+   at this height it reads as the bottom rule of the solid part of the
+   billboard, which is a better job than it was doing before.
    ------------------------------------------------------------------------ */
 .heroBannerPlugin-progress {
     position: absolute;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--heroBannerPlugin-fade);
     height: 3px;
     background: rgba(255, 255, 255, 0.22);
     z-index: 4;
@@ -391,9 +486,9 @@
 /* ---------------------------------------------------------------------------
    Keyframes
    ------------------------------------------------------------------------ */
-@keyframes heroBannerPlugin-rise {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
+@keyframes heroBannerPlugin-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
 }
 
 @keyframes heroBannerPlugin-in-left {
@@ -418,23 +513,31 @@
 }
 
 /* ---------------------------------------------------------------------------
-   Narrow screens
+   Narrow screens. The banner keeps its full-bleed edges here - a phone is
+   where an edge-to-edge billboard matters most - so only the height and the
+   type scale down.
    ------------------------------------------------------------------------ */
 @media (max-width: 700px) {
     .heroBannerPlugin {
-        height: clamp(340px, 54vh, 480px);
-        border-radius: 10px;
-        margin-bottom: 1rem;
+        height: clamp(360px, 64vh, 560px);
+        margin-bottom: 1.25rem;
+        /* A shorter banner cannot afford as tall a fade without eating into
+           the text, so the dissolve is compressed rather than the layout. The
+           content's offset follows from this. */
+        --heroBannerPlugin-fade: clamp(64px, 9vh, 110px);
     }
 
     .heroBannerPlugin-content {
         max-width: 100%;
-        bottom: 3.2rem;
     }
 
     .heroBannerPlugin-title {
-        font-size: clamp(1.3rem, 6vw, 1.85rem);
+        font-size: clamp(1.5rem, 7vw, 2.1rem);
         margin-bottom: 0.5rem;
+    }
+
+    .heroBannerPlugin-titleLogo {
+        max-height: clamp(2.5rem, 7vh, 4.5rem);
     }
 
     .heroBannerPlugin-meta {
@@ -450,19 +553,20 @@
     }
 
     .heroBannerPlugin-actions button {
-        padding: 0.62rem 1.05rem;
+        padding: 0.68rem 1.2rem;
         font-size: 0.8125rem;
     }
 
     .heroBannerPlugin-dots {
-        bottom: 1.15rem;
+        margin-top: 1rem;
     }
 }
 
 /* Short viewports: keep the banner from crowding out the home sections. */
 @media (max-height: 620px) {
     .heroBannerPlugin {
-        height: 360px;
+        height: 400px;
+        --heroBannerPlugin-fade: 64px;
     }
 
     .heroBannerPlugin-overview {

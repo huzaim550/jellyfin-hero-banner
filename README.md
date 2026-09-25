@@ -2,14 +2,17 @@
 
 Adds a rotating hero banner to the top of the Jellyfin home screen, showing content from your libraries with:
 
-* Backdrop artwork
-* Title, year, rating, runtime, and genres
+* Full-bleed backdrop artwork, edge to edge, with no card, border or corner radius
+* A bottom edge that dissolves into the page, so the rows below emerge from it
+* Title artwork — the item's own logo, or the series logo for an episode — falling
+  back to the title in text when there is none
+* Year, rating, runtime, and genres
 * Overview/plot summary
 * **Play** and **More Info** buttons
 * Four content sources — recently added, continue watching, next up, or a random pick
 * A resume bar and a **Resume** label on anything you are part-way through
 * Smooth artwork cross-fades and slow zoom animation
-* Slide indicators showing the rotation progress
+* Slide indicators showing the rotation progress, under the buttons
 * A fallback background when artwork isn't available
 * Typography that ships with the plugin, so it looks the same everywhere
 * Responsive layout for phones, tablets, and desktop

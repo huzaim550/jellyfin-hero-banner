@@ -25,7 +25,10 @@
     // because it arrives inside UserData, which the API always returns - it is
     // what draws the resume bar.
     var ITEM_FIELDS = "Overview,ProductionYear,OfficialRating,RunTimeTicks,Genres";
-    var IMAGE_TYPES = "Backdrop,Primary,Thumb";
+    // Logo is here for the title artwork. EnableImageTypes governs which tags
+    // come back in ImageTags, so leaving it out means every item looks like it
+    // has no logo and the banner falls back to the text title forever.
+    var IMAGE_TYPES = "Backdrop,Primary,Thumb,Logo";
 
     // Inline icons so the buttons don't depend on an icon font being present.
     // The play mark is solid, the info mark is drawn as a stroke - see
@@ -299,6 +302,36 @@
         return "";
     }
 
+    // The item's title artwork, or "" when it has none. ClearLogo is the
+    // transparent wordmark image - the thing a streaming service shows instead
+    // of typing the title out - and most films and series have one.
+    //
+    // Episodes almost never carry a logo of their own; the server puts the
+    // series' logo in ParentLogoItemId/ParentLogoImageTag instead, and only
+    // fills those when Logo is in EnableImageTypes (see IMAGE_TYPES above).
+    // Continue watching and Next up are episode lists, so without this
+    // fallback two of the four content sources would hardly ever show artwork.
+    function logoUrl(item) {
+        var id = item.Id;
+        var tag = item.ImageTags && item.ImageTags.Logo;
+
+        if (!tag && item.ParentLogoItemId && item.ParentLogoImageTag) {
+            id = item.ParentLogoItemId;
+            tag = item.ParentLogoImageTag;
+        }
+
+        if (!tag) {
+            return "";
+        }
+
+        return ApiClient.getScaledImageUrl(id, {
+            type: "Logo",
+            tag: tag,
+            maxWidth: 800,
+            quality: 90
+        });
+    }
+
     // Navigates to an item's detail page.
     //
     // The route is written as "#/details?id=..." - the form jellyfin-web has
@@ -344,8 +377,10 @@
                         ICON_INFO + '<span>More info</span>' +
                     '</button>' +
                 '</div>' +
+                // The pills live inside the content column so they travel with
+                // the text block - see the note on .heroBannerPlugin-dots.
+                '<div class="heroBannerPlugin-dots"></div>' +
             '</div>' +
-            '<div class="heroBannerPlugin-dots"></div>' +
             '<div class="heroBannerPlugin-progress" aria-hidden="true" hidden><i></i></div>';
         return el;
     }
@@ -436,6 +471,43 @@
         }
 
         return rest ? hours + "h " + rest + "m" : hours + "h";
+    }
+
+    // The title block: the item's logo artwork when it has one, its name as
+    // text when it does not. Rebuilt rather than toggled on every render,
+    // because the two are different elements and a slide change can move
+    // between them in either direction.
+    function renderTitle(item) {
+        var titleEl = state.el.querySelector(".heroBannerPlugin-title");
+        var url = logoUrl(item);
+
+        titleEl.textContent = "";
+
+        if (!url) {
+            titleEl.textContent = item.Name || "";
+            return;
+        }
+
+        var img = document.createElement("img");
+        img.className = "heroBannerPlugin-titleLogo";
+        // The name doubles as the accessible label and as the visible fallback
+        // if the artwork never arrives, rather than leaving a hole where the
+        // title should be.
+        img.alt = item.Name || "";
+        img.decoding = "async";
+        img.addEventListener("error", function () {
+            // The banner may have rotated to another title while this request
+            // was in flight; only the slide this image belongs to may rewrite
+            // the block.
+            if (img.parentNode !== titleEl) {
+                return;
+            }
+
+            img.remove();
+            titleEl.textContent = item.Name || "";
+        });
+        img.src = url;
+        titleEl.appendChild(img);
     }
 
     // Year / rating / runtime / genres, skipping whatever the item doesn't have.
@@ -557,9 +629,11 @@
         }
 
         applySlideImage(imageUrl(item));
-        replayEntrance();
 
-        state.el.querySelector(".heroBannerPlugin-title").textContent = item.Name || "";
+        // Built before the entrance replays, so the logo is in the DOM when the
+        // animation starts rather than landing inside an animating container.
+        renderTitle(item);
+        replayEntrance();
 
         renderMeta(item);
 
