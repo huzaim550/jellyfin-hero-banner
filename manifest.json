@@ -9,6 +9,14 @@
     "imageUrl": "",
     "versions": [
       {
+        "version": "1.0.17.0",
+        "changelog": "Rebuild the banner as a full-bleed billboard. It runs edge to edge now - no side margins, no corner radius, no border and no shadow - and its bottom edge is masked away so the artwork dissolves into the page and the home rows below emerge from it instead of meeting a hard line. The title is the item's own logo artwork where there is one, and the name in text where there is not; episodes have no logo of their own, so they borrow the series logo. Logos are drawn in solid white, because the ClearLogo images Jellyfin sources are as often dark or coloured as they are white and a dark one is unreadable over the scrim. The slide indicators move from the bottom-right corner to the bottom-left, directly under the buttons, and now travel with the text block instead of being pinned to the banner's edge. Play and More info lose their outline, and the primary button keeps a 4px corner. The banner's own entrance is a plain fade rather than a 20px rise, since a full-width band sliding up reads as a card arriving rather than as a billboard. The resume bar sits at the top of the fade rather than on the bottom edge, which is where the banner now dissolves into the page. Nothing else changes: the content sources, the rotation, the cross-fade, the resume behaviour, the page-gutter alignment and the reduced-motion handling all work as before.",
+        "targetAbi": "12.1.0.0",
+        "sourceUrl": "https://github.com/huzaim550/jellyfin-hero-banner/releases/download/v1.0.17.0/herobanner_1.0.17.0.zip",
+        "checksum": "08aa5da64a468125af1fac4d2ea9c584",
+        "timestamp": "2026-09-25T21:20:41Z"
+      },
+      {
         "version": "1.0.16.0",
         "changelog": "Built against Jellyfin 12.1 (net10.0) instead of 10.9, so the plugin is loadable on 12.x. The banner is roughly a third taller, and the dark tint over the artwork is much lighter - the gradient now falls away so only the column the text sits in stays dark, which leaves the picture itself visible instead of crushed to near-black. The Play and More info buttons now link the way the 12.x web client routes; they used to emit the older \"#!\" URL form, which 12.x still redirects but warns about on every click and has said it will stop supporting. This release also carries the \"What the banner shows\" setting described below, which had not shipped yet.",
         "targetAbi": "12.1.0.0",
