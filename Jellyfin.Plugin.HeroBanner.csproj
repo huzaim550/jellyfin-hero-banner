@@ -19,8 +19,8 @@
       then use the matching Jellyfin.Controller / Jellyfin.Model package version.
       https://www.nuget.org/packages/Jellyfin.Controller
     -->
-    <PackageReference Include="Jellyfin.Controller" Version="12.1.0" />
-    <PackageReference Include="Jellyfin.Model" Version="12.1.0" />
+    <PackageReference Include="Jellyfin.Controller" Version="12.4.0" />
+    <PackageReference Include="Jellyfin.Model" Version="12.4.0" />
   </ItemGroup>
 
   <ItemGroup>
