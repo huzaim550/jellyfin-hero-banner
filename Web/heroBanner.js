@@ -269,38 +269,55 @@
         });
     }
 
-    function imageUrl(item) {
-        var id = item.Id;
+    
+function imageUrl(item) {
+    var id = item.Id;
 
-        if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
-            return ApiClient.getScaledImageUrl(id, {
-                type: "Backdrop",
-                tag: item.BackdropImageTags[0],
-                maxWidth: 1920,
-                quality: 90
-            });
-        }
-
-        if (item.ImageTags && item.ImageTags.Thumb) {
-            return ApiClient.getScaledImageUrl(id, {
-                type: "Thumb",
-                tag: item.ImageTags.Thumb,
-                maxWidth: 1920,
-                quality: 90
-            });
-        }
-
-        if (item.ImageTags && item.ImageTags.Primary) {
-            return ApiClient.getScaledImageUrl(id, {
-                type: "Primary",
-                tag: item.ImageTags.Primary,
-                maxWidth: 1920,
-                quality: 90
-            });
-        }
-
-        return "";
+    // Собственный фон эпизода
+    if (item.BackdropImageTags && item.BackdropImageTags.length > 0) {
+        return ApiClient.getScaledImageUrl(id, {
+            type: "Backdrop",
+            tag: item.BackdropImageTags[0],
+            maxWidth: 1920,
+            quality: 90
+        });
     }
+
+    // Фон родительского сериала
+    if (item.ParentBackdropItemId &&
+        item.ParentBackdropImageTags &&
+        item.ParentBackdropImageTags.length > 0) {
+        return ApiClient.getScaledImageUrl(item.ParentBackdropItemId, {
+            type: "Backdrop",
+            tag: item.ParentBackdropImageTags[0],
+            maxWidth: 1920,
+            quality: 90
+        });
+    }
+
+    // Превью эпизода
+    if (item.ImageTags && item.ImageTags.Thumb) {
+        return ApiClient.getScaledImageUrl(id, {
+            type: "Thumb",
+            tag: item.ImageTags.Thumb,
+            maxWidth: 1920,
+            quality: 90
+        });
+    }
+
+    // Постер эпизода
+    if (item.ImageTags && item.ImageTags.Primary) {
+        return ApiClient.getScaledImageUrl(id, {
+            type: "Primary",
+            tag: item.ImageTags.Primary,
+            maxWidth: 1920,
+            quality: 90
+        });
+    }
+
+    return "";
+}
+
 
     // The item's title artwork, or "" when it has none. ClearLogo is the
     // transparent wordmark image - the thing a streaming service shows instead
